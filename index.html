@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ร้านค้าออนไลน์ - Firebase Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .category-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-blue-600 cursor-pointer" onclick="showPage('home')">🛍️ Firebase Store</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#" onclick="showPage('home')" class="text-gray-700 hover:text-blue-600 transition">หน้าแรก</a>
+                    
+                    <!-- Flash Sale Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            ⚡ Flash Sale
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="#" onclick="showFlashSale('main')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🔥 Flash Sale หลัก</a>
+                                <a href="#" onclick="showFlashSale('today')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">📅 Flash Sale วันนี้</a>
+                                <a href="#" onclick="showFlashSale('weekend')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🎯 Flash Sale สุดสัปดาห์</a>
+                                <a href="#" onclick="showFlashSale('mega')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💥 Mega Flash Sale</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- โปรโมชั่น Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            🎁 โปรโมชั่น
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="#" onclick="showPromotion('mobile')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">📱 โปรโมชั่นมือถือ</a>
+                                <a href="#" onclick="showPromotion('computer')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💻 โปรโมชั่นคอมพิวเตอร์</a>
+                                <a href="#" onclick="showPromotion('fashion')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">👗 โปรโมชั่นแฟชั่น</a>
+                                <a href="#" onclick="showPromotion('home')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🏠 โปรโมชั่นบ้านและสวน</a>
+                                <a href="#" onclick="showPromotion('game')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🎮 โปรโมชั่นเกม</a>
+                                <a href="#" onclick="showPromotion('health')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💊 โปรโมชั่นสุขภาพ</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ร้านค้า Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            🛒 ร้านค้า
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="https://shopee.co.th" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">🟠 Shopee</a>
+                                <a href="https://lazada.co.th" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🔵 Lazada</a>
+                                <a href="https://tiktok.com/shop" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600">⚫ TikTok Shop</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="#" onclick="showPage('about')" class="text-gray-700 hover:text-blue-600 transition">เกี่ยวกับเรา</a>
+                    <a href="#" onclick="showPage('contact')" class="text-gray-700 hover:text-blue-600 transition">ติดต่อเรา</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="cartBtn" class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        🛒 ตะกร้า (<span id="cartCount">0</span>)
+                    </button>
+                    <button id="adminBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">
+                        👤 แอดมิน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div id="heroSection" class="hero-gradient text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-6">ยินดีต้อนรับสู่ Firebase Store</h1>
+            <p class="text-xl mb-8">ร้านค้าออนไลน์ที่ดีที่สุด พร้อมสินค้าคุณภาพและบริการที่เป็นเลิศ</p>
+            <button onclick="showPage('products')" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                เริ่มช้อปปิ้ง
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Home Page -->
+        <div id="homePage" class="fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">🚚</div>
+                    <h3 class="text-xl font-semibold mb-2">จัดส่งฟรี</h3>
+                    <p class="text-gray-600">สั่งซื้อขั้นต่ำ 1,000 บาท</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-xl font-semibold mb-2">ปลอดภัย 100%</h3>
+                    <p class="text-gray-600">ระบบชำระเงินที่ปลอดภัย</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">⭐</div>
+                    <h3 class="text-xl font-semibold mb-2">คุณภาพดี</h3>
+                    <p class="text-gray-600">สินค้าคุณภาพจากแบรนด์ดัง</p>
+                </div>
+            </div>
+
+            <!-- Popular Categories Section -->
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-center mb-8">🔥 หมวดหมู่ยอดนิยม</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div onclick="showPage('products'); filterByCategory('mobile')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">📱</div>
+                        <h3 class="font-semibold">มือถือ</h3>
+                        <p class="text-sm text-gray-500">สมาร์ทโฟน</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('computer')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">💻</div>
+                        <h3 class="font-semibold">คอมพิวเตอร์</h3>
+                        <p class="text-sm text-gray-500">แล็ปท็อป PC</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('fashion')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">👗</div>
+                        <h3 class="font-semibold">แฟชั่น</h3>
+                        <p class="text-sm text-gray-500">เสื้อผ้า</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('home')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">🏠</div>
+                        <h3 class="font-semibold">บ้านและสวน</h3>
+                        <p class="text-sm text-gray-500">ของใช้ในบ้าน</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('game')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">🎮</div>
+                        <h3 class="font-semibold">เกม</h3>
+                        <p class="text-sm text-gray-500">คอนโซล เกม</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('health')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">💊</div>
+                        <h3 class="font-semibold">สุขภาพ</h3>
+                        <p class="text-sm text-gray-500">วิตามิน อาหารเสริม</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Products by Category -->
+            <div class="space-y-12">
+                <!-- Mobile Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">📱</span>
+                            สินค้ามือถือแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('mobile')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="mobileProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Computer Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">💻</span>
+                            สินค้าคอมพิวเตอร์แนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('computer')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="computerProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Fashion Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">👗</span>
+                            สินค้าแฟชั่นแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('fashion')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="fashionProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Home Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">🏠</span>
+                            สินค้าบ้านและสวนแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('home')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="homeProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Game Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">🎮</span>
+                            สินค้าเกมแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('game')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="gameProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Health Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">💊</span>
+                            สินค้าสุขภาพแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('health')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="healthProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Page -->
+        <div id="productsPage" class="hidden">
+            <!-- Category Filter -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">หมวดหมู่สินค้า</h2>
+                <div class="flex flex-wrap gap-2" id="categoryFilter">
+                    <button onclick="filterByCategory('all')" class="category-btn category-active px-4 py-2 rounded-lg border transition">
+                        ทั้งหมด
+                    </button>
+                    <button onclick="filterByCategory('mobile')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        📱 มือถือ
+                    </button>
+                    <button onclick="filterByCategory('computer')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        💻 คอมพิวเตอร์
+                    </button>
+                    <button onclick="filterByCategory('fashion')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        👗 แฟชั่น
+                    </button>
+                    <button onclick="filterByCategory('home')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        🏠 บ้านและสวน
+                    </button>
+                    <button onclick="filterByCategory('game')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        🎮 เกม
+                    </button>
+                    <button onclick="filterByCategory('health')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        💊 สุขภาพ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="flex justify-center items-center py-20">
+                <div class="loading"></div>
+                <span class="ml-4 text-gray-600">กำลังโหลดสินค้า...</span>
+            </div>
+
+            <!-- Products Grid -->
+            <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-20 hidden">
+                <div class="text-6xl mb-4">📦</div>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">ยังไม่มีสินค้า</h3>
+                <p class="text-gray-500">กรุณาเข้าสู่ระบบแอดมินเพื่อเพิ่มสินค้า</p>
+            </div>
+        </div>
+
+        <!-- About Page -->
+        <div id="aboutPage" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold mb-6 text-center">เกี่ยวกับเรา</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">🏪 เรื่องราวของเรา</h3>
+                        <p class="text-gray-600 mb-4">
+                            Firebase Store เป็นร้านค้าออนไลน์ที่มุ่งมั่นในการนำเสนอสินค้าเทคโนโลยีคุณภาพสูง 
+                            พร้อมบริการที่เป็นเลิศให้กับลูกค้าทุกท่าน
+                        </p>
+                        <p class="text-gray-600">
+                            เราเชื่อว่าเทคโนโลยีที่ดีสามารถเปลี่ยนแปลงชีวิตของผู้คนให้ดีขึ้น 
+                            จึงคัดสรรสินค้าคุณภาพจากแบรนด์ชั้นนำมาให้ลูกค้าได้เลือกสรร
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">🎯 วิสัยทัศน์</h3>
+                        <ul class="text-gray-600 space-y-2">
+                            <li>• มุ่งมั่นให้บริการที่เป็นเลิศ</li>
+                            <li>• นำเสนอสินค้าคุณภาพในราคาที่เป็นธรรม</li>
+                            <li>• สร้างประสบการณ์การช้อปปิ้งที่ดีที่สุด</li>
+                            <li>• พัฒนาเทคโนโลยีเพื่อความสะดวกของลูกค้า</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Sale Page -->
+        <div id="flashSalePage" class="hidden fade-in">
+            <div class="bg-gradient-to-r from-red-500 to-orange-500 text-white p-8 rounded-lg mb-8">
+                <h2 class="text-4xl font-bold mb-4 text-center">⚡ Flash Sale</h2>
+                <div id="flashSaleTitle" class="text-xl text-center mb-4">🔥 Flash Sale หลัก</div>
+                <div class="text-center">
+                    <div class="inline-flex items-center bg-white text-red-600 px-6 py-2 rounded-full font-bold">
+                        ⏰ เหลือเวลา: <span id="countdown" class="ml-2">23:59:45</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="flashSaleProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </div>
+
+        <!-- Promotion Page -->
+        <div id="promotionPage" class="hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-8 rounded-lg mb-8">
+                <h2 class="text-4xl font-bold mb-4 text-center">🎁 โปรโมชั่น</h2>
+                <div id="promotionTitle" class="text-xl text-center mb-4">📱 โปรโมชั่นมือถือ</div>
+                <div class="text-center">
+                    <div class="inline-flex items-center bg-white text-purple-600 px-6 py-2 rounded-full font-bold">
+                        🎯 ลดสูงสุด 50% + ฟรีของแถม
+                    </div>
+                </div>
+            </div>
+            
+            <div id="promotionProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </div>
+
+        <!-- Contact Page -->
+        <div id="contactPage" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold mb-6 text-center">ติดต่อเรา</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">📞 ข้อมูลติดต่อ</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📍</span>
+                                <div>
+                                    <p class="font-medium">ที่อยู่</p>
+                                    <p class="text-gray-600">123 ถนนเทคโนโลยี แขวงนวัตกรรม เขตดิจิทัล กรุงเทพฯ 10110</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📞</span>
+                                <div>
+                                    <p class="font-medium">โทรศัพท์</p>
+                                    <p class="text-gray-600">02-123-4567</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📧</span>
+                                <div>
+                                    <p class="font-medium">อีเมล</p>
+                                    <p class="text-gray-600">info@firebasestore.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">🕒</span>
+                                <div>
+                                    <p class="font-medium">เวลาทำการ</p>
+                                    <p class="text-gray-600">จันทร์-ศุกร์ 9:00-18:00 น.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">💬 ส่งข้อความถึงเรา</h3>
+                        <form class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                                <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ข้อความ</label>
+                                <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                                ส่งข้อความ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">🛒 ตะกร้าสินค้า</h2>
+                        <button id="closeCartModal" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div id="cartItems"></div>
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center text-lg font-bold">
+                            <span>รวมทั้งหมด:</span>
+                            <span id="cartTotal">฿0</span>
+                        </div>
+                        <button class="w-full bg-green-600 text-white py-2 rounded-lg mt-4 hover:bg-green-700 transition">
+                            สั่งซื้อ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div id="adminModalContent" class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto cursor-move" style="user-select: none;">
+                <div class="p-6">
+                    <div id="modalHeader" class="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded-lg cursor-move select-none">
+                        <h2 class="text-xl font-bold">👤 เข้าสู่ระบบแอดมิน</h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-500">🖱️ ลากเพื่อย้าย</span>
+                            <button id="closeAdminModal" class="text-gray-500 hover:text-gray-700 cursor-pointer">✕</button>
+                        </div>
+                    </div>
+                    <div id="loginForm">
+                        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p class="text-sm text-yellow-800">
+                                <strong>🔧 การตั้งค่า Firebase:</strong><br>
+                                1. สร้าง Project ใน Firebase Console<br>
+                                2. เปิดใช้ Authentication & Firestore<br>
+                                3. แทนที่ Firebase Config ในโค้ด<br>
+                                <strong>Demo:</strong> admin@demo.com / admin123
+                            </p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                            <input type="email" id="adminEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="admin@example.com">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                            <input type="password" id="adminPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
+                        </div>
+                        <button id="loginBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                            เข้าสู่ระบบ
+                        </button>
+                    </div>
+                    <div id="adminPanel" class="hidden">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-4">🛠️ จัดการเว็บไซต์</h3>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <button onclick="showAdminSection('products')" id="adminProductsBtn" class="admin-section-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                    📦 จัดการสินค้า
+                                </button>
+                                <button onclick="showAdminSection('pages')" id="adminPagesBtn" class="admin-section-btn bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                                    📄 จัดการหน้าเว็บ
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Product Management -->
+                        <div id="adminProductsSection" class="mb-4">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <!-- Left Column -->
+                                <div class="space-y-4">
+                                    <!-- Auto Generate Products -->
+                                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                        <h4 class="text-sm font-semibold mb-2 text-blue-800">🤖 สร้างสินค้าอัตโนมัติ</h4>
+                                        <div class="grid grid-cols-2 gap-2 mb-2">
+                                            <select id="autoCategory" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                <option value="">เลือกหมวดหมู่</option>
+                                                <option value="mobile">📱 มือถือ</option>
+                                                <option value="computer">💻 คอมพิวเตอร์</option>
+                                                <option value="fashion">👗 แฟชั่น</option>
+                                                <option value="home">🏠 บ้านและสวน</option>
+                                                <option value="game">🎮 เกม</option>
+                                                <option value="health">💊 สุขภาพ</option>
+                                            </select>
+                                            <input type="number" id="autoCount" placeholder="จำนวน (1-20)" min="1" max="20" value="5" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                        </div>
+                                        <button id="generateProductsBtn" class="w-full bg-blue-600 text-white py-1 rounded hover:bg-blue-700 transition text-xs">
+                                            🚀 สร้างสินค้าอัตโนมัติ
+                                        </button>
+                                    </div>
+
+                                    <!-- Bulk Actions -->
+                                    <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                        <h4 class="text-sm font-semibold mb-2 text-yellow-800">⚡ จัดการสินค้าจำนวนมาก</h4>
+                                        <div class="grid grid-cols-2 gap-2 mb-2">
+                                            <select id="bulkCategory" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                <option value="">เลือกหมวดหมู่</option>
+                                                <option value="mobile">📱 มือถือ</option>
+                                                <option value="computer">💻 คอมพิวเตอร์</option>
+                                                <option value="fashion">👗 แฟชั่น</option>
+                                                <option value="home">🏠 บ้านและสวน</option>
+                                                <option value="game">🎮 เกม</option>
+                                                <option value="health">💊 สุขภาพ</option>
+                                            </select>
+                                            <input type="number" id="bulkPriceMultiplier" placeholder="คูณราคา (เช่น 1.1)" step="0.1" min="0.1" max="10" value="1" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <button id="bulkUpdatePriceBtn" class="bg-orange-600 text-white py-1 rounded hover:bg-orange-700 transition text-xs">
+                                                💰 อัปเดตราคา
+                                            </button>
+                                            <button id="bulkDeleteBtn" class="bg-red-600 text-white py-1 rounded hover:bg-red-700 transition text-xs">
+                                                🗑️ ลบทั้งหมด
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Statistics -->
+                                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                                        <h4 class="text-sm font-semibold mb-2 text-green-800">📊 สถิติสินค้า</h4>
+                                        <div id="productStats" class="grid grid-cols-2 gap-2 text-xs">
+                                            <div class="text-center">
+                                                <div class="text-lg font-bold text-green-600" id="totalProducts">0</div>
+                                                <div class="text-gray-600">สินค้าทั้งหมด</div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="text-lg font-bold text-blue-600" id="avgPrice">฿0</div>
+                                                <div class="text-gray-600">ราคาเฉลี่ย</div>
+                                            </div>
+                                        </div>
+                                        <div id="categoryStats" class="mt-2 text-xs space-y-1">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column -->
+                                <div class="space-y-4">
+                                    <!-- Product Management List -->
+                                    <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                        <h4 class="text-sm font-semibold mb-2 text-indigo-800">📝 จัดการสินค้าที่มีอยู่</h4>
+                                        <div class="mb-2">
+                                            <select id="manageCategory" class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                                                <option value="">ดูสินค้าทั้งหมด</option>
+                                                <option value="mobile">📱 มือถือ</option>
+                                                <option value="computer">💻 คอมพิวเตอร์</option>
+                                                <option value="fashion">👗 แฟชั่น</option>
+                                                <option value="home">🏠 บ้านและสวน</option>
+                                                <option value="game">🎮 เกม</option>
+                                                <option value="health">💊 สุขภาพ</option>
+                                            </select>
+                                        </div>
+                                        <div id="productManagementList" class="max-h-40 overflow-y-auto space-y-1">
+                                            <!-- Product list will be populated here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Manual Add Product -->
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <h4 class="text-sm font-semibold mb-2">➕ เพิ่มสินค้าด้วยตนเอง</h4>
+                                        <div class="space-y-2">
+                                            <input type="text" id="productName" placeholder="ชื่อสินค้า" class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <input type="number" id="productPrice" placeholder="ราคา" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                <select id="productCategory" class="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                    <option value="">เลือกหมวดหมู่</option>
+                                                    <option value="mobile">📱 มือถือ</option>
+                                                    <option value="computer">💻 คอมพิวเตอร์</option>
+                                                    <option value="fashion">👗 แฟชั่น</option>
+                                                    <option value="home">🏠 บ้านและสวน</option>
+                                                    <option value="game">🎮 เกม</option>
+                                                    <option value="health">💊 สุขภาพ</option>
+                                                </select>
+                                            </div>
+                                            <input type="url" id="productImage" placeholder="URL รูปภาพ" class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                                            <input type="url" id="productAffiliate" placeholder="ลิงค์ Affiliate" class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                                            <textarea id="productDescription" placeholder="รายละเอียดสินค้า" class="w-full px-2 py-1 border border-gray-300 rounded text-xs h-16"></textarea>
+                                            <button id="addProductBtn" class="w-full bg-green-600 text-white py-1 rounded hover:bg-green-700 transition text-xs">
+                                                เพิ่มสินค้า
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Page Management -->
+                        <div id="adminPagesSection" class="mb-4 hidden">
+                            <h4 class="text-md font-semibold mb-2">จัดการหน้าเว็บ</h4>
+                            <div class="space-y-2">
+                                <button onclick="editPage('home')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    🏠 แก้ไขหน้าแรก
+                                </button>
+                                <button onclick="editPage('about')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    ℹ️ แก้ไขหน้าเกี่ยวกับเรา
+                                </button>
+                                <button onclick="editPage('contact')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    📞 แก้ไขหน้าติดต่อเรา
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="logoutBtn" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">✏️ แก้ไขสินค้า</h2>
+                        <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="hidden" id="editProductId">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อสินค้า</label>
+                            <input type="text" id="editProductName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ราคา</label>
+                            <input type="number" id="editProductPrice" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
+                            <select id="editProductCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="mobile">📱 มือถือ</option>
+                                <option value="computer">💻 คอมพิวเตอร์</option>
+                                <option value="fashion">👗 แฟชั่น</option>
+                                <option value="home">🏠 บ้านและสวน</option>
+                                <option value="game">🎮 เกม</option>
+                                <option value="health">💊 สุขภาพ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">URL รูปภาพ</label>
+                            <input type="url" id="editProductImage" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ลิงค์ Affiliate</label>
+                            <input type="url" id="editProductAffiliate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รายละเอียดสินค้า</label>
+                            <textarea id="editProductDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div class="flex space-x-4">
+                            <button id="saveEditBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                                💾 บันทึกการแก้ไข
+                            </button>
+                            <button id="cancelEditBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition">
+                                ยกเลิก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">🛍️ Firebase Store</h3>
+                    <p class="text-gray-300 mb-4">ร้านค้าออนไลน์ที่ดีที่สุด พร้อมสินค้าคุณภาพและบริการที่เป็นเลิศ</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white transition">📘</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">📷</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">🐦</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">📺</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">เมนูหลัก</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="showPage('home')" class="text-gray-300 hover:text-white transition">หน้าแรก</a></li>
+                        <li><a href="#" onclick="showPage('products')" class="text-gray-300 hover:text-white transition">สินค้า</a></li>
+                        <li><a href="#" onclick="showPage('about')" class="text-gray-300 hover:text-white transition">เกี่ยวกับเรา</a></li>
+                        <li><a href="#" onclick="showPage('contact')" class="text-gray-300 hover:text-white transition">ติดต่อเรา</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">หมวดหมู่สินค้า</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('mobile')" class="text-gray-300 hover:text-white transition">📱 มือถือ</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('computer')" class="text-gray-300 hover:text-white transition">💻 คอมพิวเตอร์</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('fashion')" class="text-gray-300 hover:text-white transition">👗 แฟชั่น</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('home')" class="text-gray-300 hover:text-white transition">🏠 บ้านและสวน</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('game')" class="text-gray-300 hover:text-white transition">🎮 เกม</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('health')" class="text-gray-300 hover:text-white transition">💊 สุขภาพ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">ติดต่อเรา</h4>
+                    <ul class="space-y-2 text-gray-300">
+                        <li>📍 123 ถนนเทคโนโลยี แขวงนวัตกรรม</li>
+                        <li>📞 02-123-4567</li>
+                        <li>📧 info@firebasestore.com</li>
+                        <li>🕒 จันทร์-ศุกร์ 9:00-18:00 น.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-300">&copy; 2024 Firebase Store. สงวนลิขสิทธิ์ทั้งหมด.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase Configuration - แทนที่ด้วย config จริงของคุณ
+        const firebaseConfig = {
+            // ⚠️ กรุณาแทนที่ด้วยข้อมูลจริงจาก Firebase Console
+            apiKey: "AIzaSyAmsiJelUN1V8C9mCC1Osy-uSZAuk3M7Lw",
+  authDomain: "test-95403.firebaseapp.com",
+  databaseURL: "https://test-95403-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "test-95403",
+  storageBucket: "test-95403.firebasestorage.app",
+  messagingSenderId: "30370027223",
+  appId: "1:30370027223:web:be434cdf70770ea44f4292",
+        };
+
+        // Initialize Firebase
+        let db, auth;
+        let cart = [];
+        let currentUser = null;
+        let allProducts = []; // เก็บสินค้าทั้งหมดจาก Firebase
+
+        let currentPage = 'home';
+        let currentCategory = 'all';
+        let filteredProducts = [];
+
+        // Product templates for auto generation
+        const productTemplates = {
+            mobile: [
+                { name: 'iPhone 15 Pro Max', basePrice: 45900, image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400', description: 'สมาร์ทโฟนรุ่นล่าสุดจาก Apple พร้อมชิป A17 Pro และกล้อง 48MP' },
+                { name: 'Samsung Galaxy S24 Ultra', basePrice: 42900, image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400', description: 'สมาร์ทโฟนเรือธงจาก Samsung พร้อม S Pen และกล้อง 200MP' },
+                { name: 'Google Pixel 8 Pro', basePrice: 32900, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400', description: 'สมาร์ทโฟน AI ที่ดีที่สุดจาก Google พร้อมกล้องคุณภาพสูง' },
+                { name: 'OnePlus 12', basePrice: 28900, image: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400', description: 'สมาร์ทโฟนเพื่อการเล่นเกม พร้อมชาร์จเร็ว 100W' },
+                { name: 'Xiaomi 14 Ultra', basePrice: 35900, image: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=400', description: 'สมาร์ทโฟนกล้องเทพ พร้อมเลนส์ Leica' }
+            ],
+            computer: [
+                { name: 'MacBook Pro M3', basePrice: 65900, image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400', description: 'แล็ปท็อปสำหรับมืออาชีพ พร้อมชิป M3 และหน้าจอ Retina' },
+                { name: 'Dell XPS 13', basePrice: 45900, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400', description: 'อัลตราบุ๊คพรีเมียม ดีไซน์บาง เบา ประสิทธิภาพสูง' },
+                { name: 'ASUS ROG Strix G15', basePrice: 55900, image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400', description: 'เกมมิ่งแล็ปท็อป พร้อมการ์ดจอ RTX 4060' },
+                { name: 'HP Spectre x360', basePrice: 42900, image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400', description: 'แล็ปท็อป 2-in-1 หน้าจอสัมผัส ใช้งานได้หลากหลาย' },
+                { name: 'Lenovo ThinkPad X1', basePrice: 48900, image: 'https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=400', description: 'แล็ปท็อปสำหรับธุรกิจ ทนทาน ปลอดภัย' }
+            ],
+            fashion: [
+                { name: 'เสื้อยืดคอตตอน 100%', basePrice: 590, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400', description: 'เสื้อยืดคุณภาพดี ผ้าคอตตอน 100% นิ่ม ใส่สบาย' },
+                { name: 'กางเกงยีนส์ Slim Fit', basePrice: 1290, image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400', description: 'กางเกงยีนส์ทรงสลิม ผ้าดี ใส่แล้วดูดี' },
+                { name: 'เดรสลำลอง', basePrice: 890, image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400', description: 'เดรสสไตล์เกาหลี ใส่ได้ทุกโอกาส' },
+                { name: 'เสื้อเชิ้ตผู้ชาย', basePrice: 790, image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', description: 'เสื้อเชิ้ตสำหรับทำงาน ผ้าไม่ยับ รีดง่าย' },
+                { name: 'รองเท้าผ้าใบ', basePrice: 1590, image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400', description: 'รองเท้าผ้าใบแฟชั่น ใส่สบาย เดินได้ทั้งวัน' }
+            ],
+            home: [
+                { name: 'ต้นไผ่ในกระถาง', basePrice: 1200, image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400', description: 'ต้นไผ่สวยงาม เหมาะสำหรับตกแต่งบ้าน' },
+                { name: 'โคมไฟตั้งโต๊ะ LED', basePrice: 890, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400', description: 'โคมไฟ LED ประหยัดไฟ แสงนิ่มตา' },
+                { name: 'หมอนอิง Sofa', basePrice: 450, image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400', description: 'หมอนอิงนุ่มสบาย ตกแต่งโซฟา' },
+                { name: 'ผ้าปูที่นอน Cotton', basePrice: 1290, image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', description: 'ผ้าปูที่นอนคอตตอน นุ่ม ระบายอากาศดี' },
+                { name: 'กระถางดินเผา', basePrice: 320, image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=400', description: 'กระถางดินเผาสำหรับปลูกต้นไม้' }
+            ],
+            game: [
+                { name: 'PlayStation 5', basePrice: 18900, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400', description: 'เครื่องเกมคอนโซลรุ่นล่าสุดจาก Sony' },
+                { name: 'Xbox Series X', basePrice: 17900, image: 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?w=400', description: 'เครื่องเกมคอนโซลจาก Microsoft รองรับ 4K' },
+                { name: 'Nintendo Switch OLED', basePrice: 12900, image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400', description: 'เครื่องเกมพกพา หน้าจอ OLED สีสวย' },
+                { name: 'Gaming Headset', basePrice: 2590, image: 'https://images.unsplash.com/photo-1599669454699-248893623440?w=400', description: 'หูฟังเกมมิ่ง เสียงใส มีไมค์' },
+                { name: 'Mechanical Keyboard', basePrice: 3290, image: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=400', description: 'คีย์บอร์ดเมคานิคัล RGB สำหรับเกมเมอร์' }
+            ],
+            health: [
+                { name: 'วิตามินซี 1000mg', basePrice: 450, image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400', description: 'วิตามินซีเสริมภูมิคุ้มกัน บรรจุ 60 เม็ด' },
+                { name: 'โปรตีนเวย์', basePrice: 1890, image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400', description: 'โปรตีนเวย์สำหรับออกกำลังกาย รสช็อกโกแลต' },
+                { name: 'น้ำมันปลา Omega-3', basePrice: 690, image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400', description: 'น้ำมันปลาบริสุทธิ์ บำรุงสมองและหัวใจ' },
+                { name: 'วิตามินรวม', basePrice: 590, image: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=400', description: 'วิตามินรวมครบถ้วน เสริมสร้างสุขภาพ' },
+                { name: 'คอลลาเจน', basePrice: 1290, image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400', description: 'คอลลาเจนบริสุทธิ์ บำรุงผิวพรรณ' }
+            ]
+        };
+
+        // Initialize app
+        function initApp() {
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                
+                console.log('Firebase initialized successfully');
+                
+                // Monitor auth state
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        currentUser = user;
+                        console.log('User signed in:', user.email);
+                        updateAdminUI(true);
+                        updateProductStats(); // Update stats when admin logs in
+                    } else {
+                        currentUser = null;
+                        console.log('User signed out');
+                        updateAdminUI(false);
+                    }
+                });
+                
+                // Load products from Firestore
+                loadProductsFromFirestore();
+                
+                // Initialize with sample data if no products exist
+                initializeSampleData();
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                showNotification('ใช้โหมดออฟไลน์ - กรุณาตั้งค่า Firebase Config ⚠️', 'error');
+                
+                // Fallback to demo data
+                initializeDemoData();
+            }
+        }
+
+        // Initialize sample data for first time setup
+        async function initializeSampleData() {
+            try {
+                const snapshot = await db.collection('products').limit(1).get();
+                
+                if (snapshot.empty) {
+                    console.log('No products found, adding sample data...');
+                    
+                    const sampleProducts = [
+                        {
+                            name: 'iPhone 15 Pro',
+                            price: 39900,
+                            category: 'mobile',
+                            image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
+                            description: 'สมาร์ทโฟนรุ่นล่าสุดจาก Apple พร้อมชิป A17 Pro',
+                            affiliateLink: 'https://shopee.co.th/iphone-15-pro',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'MacBook Air M2',
+                            price: 42900,
+                            category: 'computer',
+                            image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400',
+                            description: 'แล็ปท็อปที่บางเบาและทรงพลังที่สุดจาก Apple',
+                            affiliateLink: 'https://lazada.co.th/macbook-air-m2',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'เสื้อยืดแฟชั่น',
+                            price: 590,
+                            category: 'fashion',
+                            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
+                            description: 'เสื้อยืดคุณภาพดี ผ้านิ่ม ใส่สบาย',
+                            affiliateLink: 'https://shopee.co.th/fashion-tshirt',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'ต้นไผ่ในกระถาง',
+                            price: 1200,
+                            category: 'home',
+                            image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400',
+                            description: 'ต้นไผ่สวยงาม เหมาะสำหรับตั้งในบ้าน',
+                            affiliateLink: 'https://lazada.co.th/bamboo-plant',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'PlayStation 5',
+                            price: 18900,
+                            category: 'game',
+                            image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400',
+                            description: 'เครื่องเกมคอนโซลรุ่นล่าสุดจาก Sony',
+                            affiliateLink: 'https://shopee.co.th/playstation-5',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'วิตามินซี 1000mg',
+                            price: 450,
+                            category: 'health',
+                            image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400',
+                            description: 'วิตามินซีเสริมภูมิคุ้มกัน บรรจุ 60 เม็ด',
+                            affiliateLink: 'https://lazada.co.th/vitamin-c',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }
+                    ];
+
+                    // Add sample products to Firestore
+                    const batch = db.batch();
+                    sampleProducts.forEach(product => {
+                        const docRef = db.collection('products').doc();
+                        batch.set(docRef, product);
+                    });
+                    
+                    await batch.commit();
+                    console.log('Sample products added successfully');
+                    showNotification('เพิ่มข้อมูลตัวอย่างเรียบร้อย! 🎉');
+                    
+                    // Reload products
+                    loadProductsFromFirestore();
+                }
+            } catch (error) {
+                console.error('Error initializing sample data:', error);
+            }
+        }
+
+        // Initialize demo data as fallback
+        function initializeDemoData() {
+            allProducts = [
+                {
+                    id: '1',
+                    name: 'iPhone 15 Pro',
+                    price: 39900,
+                    category: 'mobile',
+                    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
+                    description: 'สมาร์ทโฟนรุ่นล่าสุดจาก Apple พร้อมชิป A17 Pro',
+                    affiliateLink: 'https://shopee.co.th/iphone-15-pro'
+                },
+                {
+                    id: '2',
+                    name: 'MacBook Air M2',
+                    price: 42900,
+                    category: 'computer',
+                    image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400',
+                    description: 'แล็ปท็อปที่บางเบาและทรงพลังที่สุดจาก Apple',
+                    affiliateLink: 'https://lazada.co.th/macbook-air-m2'
+                }
+            ];
+            
+            filteredProducts = [...allProducts];
+            loadProducts();
+            loadHomePageProducts();
+        }
+
+        // Load products from Firestore
+        async function loadProductsFromFirestore() {
+            if (!db) {
+                console.log('Firestore not initialized, using demo data');
+                initializeDemoData();
+                return;
+            }
+
+            try {
+                document.getElementById('loadingSpinner').classList.remove('hidden');
+                document.getElementById('productsGrid').classList.add('hidden');
+                
+                console.log('Loading products from Firestore...');
+                const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+                
+                allProducts = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    allProducts.push({
+                        id: doc.id,
+                        name: data.name || 'ไม่มีชื่อ',
+                        price: data.price || 0,
+                        category: data.category || 'other',
+                        image: data.image || 'https://via.placeholder.com/400x300?text=No+Image',
+                        description: data.description || 'ไม่มีรายละเอียด',
+                        affiliateLink: data.affiliateLink || null,
+                        createdAt: data.createdAt
+                    });
+                });
+                
+                console.log(`✅ Loaded ${allProducts.length} products from Firestore`);
+                
+                if (allProducts.length === 0) {
+                    console.log('No products found, will initialize sample data');
+                }
+                
+                filteredProducts = [...allProducts];
+                loadProducts();
+                loadHomePageProducts();
+                
+            } catch (error) {
+                console.error('❌ Error loading products:', error);
+                console.log('Falling back to demo data');
+                showNotification('ไม่สามารถเชื่อมต่อฐานข้อมูลได้ ใช้ข้อมูลตัวอย่าง ⚠️', 'error');
+                
+                // Fallback to demo data
+                initializeDemoData();
+            }
+        }
+
+        // Load products for home page
+        function loadHomePageProducts() {
+            const categories = ['mobile', 'computer', 'fashion', 'home', 'game', 'health'];
+            
+            categories.forEach(category => {
+                const categoryProducts = allProducts.filter(product => product.category === category).slice(0, 3);
+                const containerId = category + 'Products';
+                const container = document.getElementById(containerId);
+                
+                if (container && categoryProducts.length > 0) {
+                    container.innerHTML = categoryProducts.map(product => `
+                        <div class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover rounded-lg mb-3">
+                            <h4 class="font-semibold text-sm mb-2">${product.name}</h4>
+                            <p class="text-xs text-gray-600 mb-2">${product.description.substring(0, 50)}...</p>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-lg font-bold text-blue-600">฿${product.price.toLocaleString()}</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="addToCart('${product.id}')" class="flex-1 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition">
+                                    🛒 เพิ่ม
+                                </button>
+                                ${product.affiliateLink ? `
+                                    <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition text-center">
+                                        🛍️ ซื้อ
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else if (container) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">ยังไม่มีสินค้าในหมวดนี้</p>';
+                }
+            });
+        }
+
+        // Load products with loading state
+        function loadProducts() {
+            setTimeout(() => {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('productsGrid').classList.remove('hidden');
+                displayProducts(filteredProducts);
+            }, 500);
+        }
+
+        // Show page function
+        function showPage(page) {
+            // Hide all pages
+            document.getElementById('heroSection').style.display = page === 'home' ? 'block' : 'none';
+            document.getElementById('homePage').style.display = page === 'home' ? 'block' : 'none';
+            document.getElementById('productsPage').style.display = page === 'products' ? 'block' : 'none';
+            document.getElementById('aboutPage').style.display = page === 'about' ? 'block' : 'none';
+            document.getElementById('contactPage').style.display = page === 'contact' ? 'block' : 'none';
+            document.getElementById('flashSalePage').style.display = page === 'flashsale' ? 'block' : 'none';
+            document.getElementById('promotionPage').style.display = page === 'promotion' ? 'block' : 'none';
+            
+            currentPage = page;
+            
+            // Load products if showing products page
+            if (page === 'products') {
+                loadProducts();
+            }
+        }
+
+        // Filter by category
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // Update category buttons
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('category-active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('category-active');
+            }
+            
+            // Filter products
+            if (category === 'all') {
+                filteredProducts = [...allProducts];
+            } else {
+                filteredProducts = allProducts.filter(product => product.category === category);
+            }
+            
+            displayProducts(filteredProducts);
+        }
+
+        // Display products
+        function displayProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            
+            if (products.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                grid.classList.add('hidden');
+                return;
+            }
+
+            grid.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xl font-bold text-blue-600">฿${product.price.toLocaleString()}</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                🛒 เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add to cart
+        function addToCart(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ ...product, quantity: 1 });
+                }
+                updateCartUI();
+                
+                // Show success message
+                showNotification('เพิ่มสินค้าลงตะกร้าแล้ว! 🛒');
+            }
+        }
+
+        // Update cart UI
+        function updateCartUI() {
+            const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = cartCount;
+        }
+
+        // Show cart modal
+        function showCartModal() {
+            const modal = document.getElementById('cartModal');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center py-4">ตะกร้าว่าง</p>';
+                cartTotal.textContent = '฿0';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded">
+                            <div>
+                                <h4 class="font-medium">${item.name}</h4>
+                                <p class="text-sm text-gray-500">฿${item.price.toLocaleString()} x ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateQuantity('${item.id}', -1)" class="bg-gray-200 px-2 py-1 rounded">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity('${item.id}', 1)" class="bg-gray-200 px-2 py-1 rounded">+</button>
+                            <button onclick="removeFromCart('${item.id}')" class="text-red-500 ml-2">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartTotal.textContent = `฿${total.toLocaleString()}`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        // Update quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCartUI();
+                    showCartModal(); // Refresh modal
+                }
+            }
+        }
+
+        // Remove from cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+            showCartModal(); // Refresh modal
+        }
+
+        // Admin login with Firebase Auth
+        async function adminLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (!email || !password) {
+                showNotification('กรุณากรอกอีเมลและรหัสผ่าน ⚠️', 'error');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            const originalText = loginBtn.textContent;
+            loginBtn.textContent = 'กำลังเข้าสู่ระบบ...';
+            loginBtn.disabled = true;
+
+            try {
+                if (auth) {
+                    // Use Firebase Authentication
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showNotification('เข้าสู่ระบบสำเร็จ! 👤');
+                } else {
+                    // Fallback demo login
+                    if (email === 'admin@demo.com' && password === 'admin123') {
+                        currentUser = { email: email };
+                        updateAdminUI(true);
+                        showNotification('เข้าสู่ระบบสำเร็จ! (โหมดออฟไลน์) 👤');
+                    } else {
+                        throw new Error('Invalid credentials');
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ ❌';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'ไม่พบผู้ใช้นี้ในระบบ ❌';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'รหัสผ่านไม่ถูกต้อง ❌';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง ❌';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่ ⏰';
+                }
+                
+                showNotification(errorMessage, 'error');
+            } finally {
+                loginBtn.textContent = originalText;
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Update admin UI based on auth state
+        function updateAdminUI(isLoggedIn) {
+            if (isLoggedIn) {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+            } else {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                // Clear form
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        // Show admin section
+        function showAdminSection(section) {
+            document.getElementById('adminProductsSection').style.display = section === 'products' ? 'block' : 'none';
+            document.getElementById('adminPagesSection').style.display = section === 'pages' ? 'block' : 'none';
+            
+            // Update button styles
+            document.querySelectorAll('.admin-section-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'bg-purple-600');
+                btn.classList.add('bg-gray-600');
+            });
+            
+            if (section === 'products') {
+                document.getElementById('adminProductsBtn').classList.remove('bg-gray-600');
+                document.getElementById('adminProductsBtn').classList.add('bg-blue-600');
+            } else if (section === 'pages') {
+                document.getElementById('adminPagesBtn').classList.remove('bg-gray-600');
+                document.getElementById('adminPagesBtn').classList.add('bg-purple-600');
+            }
+        }
+
+        // Edit page function
+        function editPage(page) {
+            showNotification(`กำลังเปิดหน้าแก้ไข${page === 'home' ? 'หน้าแรก' : page === 'about' ? 'เกี่ยวกับเรา' : 'ติดต่อเรา'}... 📝`);
+            
+            // Close admin modal and show the page
+            document.getElementById('adminModal').classList.add('hidden');
+            showPage(page);
+        }
+
+        // Generate random products automatically
+        async function generateProducts() {
+            const category = document.getElementById('autoCategory').value;
+            const count = parseInt(document.getElementById('autoCount').value) || 5;
+
+            if (!category) {
+                showNotification('กรุณาเลือกหมวดหมู่สินค้า ⚠️', 'error');
+                return;
+            }
+
+            if (count < 1 || count > 20) {
+                showNotification('จำนวนสินค้าต้องอยู่ระหว่าง 1-20 ชิ้น ⚠️', 'error');
+                return;
+            }
+
+            try {
+                const generateBtn = document.getElementById('generateProductsBtn');
+                const originalText = generateBtn.textContent;
+                generateBtn.textContent = `กำลังสร้าง ${count} สินค้า...`;
+                generateBtn.disabled = true;
+
+                const templates = productTemplates[category];
+                const affiliateLinks = {
+                    mobile: ['https://shopee.co.th/mobile', 'https://lazada.co.th/mobile'],
+                    computer: ['https://shopee.co.th/laptop', 'https://lazada.co.th/laptop'],
+                    fashion: ['https://shopee.co.th/fashion', 'https://lazada.co.th/fashion'],
+                    home: ['https://shopee.co.th/home', 'https://lazada.co.th/home'],
+                    game: ['https://shopee.co.th/gaming', 'https://lazada.co.th/gaming'],
+                    health: ['https://shopee.co.th/health', 'https://lazada.co.th/health']
+                };
+
+                const batch = db ? db.batch() : null;
+                const newProducts = [];
+
+                for (let i = 0; i < count; i++) {
+                    const template = templates[Math.floor(Math.random() * templates.length)];
+                    const priceVariation = 0.8 + (Math.random() * 0.4); // ±20% price variation
+                    const finalPrice = Math.round(template.basePrice * priceVariation);
+                    
+                    const product = {
+                        name: `${template.name} ${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
+                        price: finalPrice,
+                        category: category,
+                        image: template.image,
+                        description: template.description,
+                        affiliateLink: affiliateLinks[category][Math.floor(Math.random() * affiliateLinks[category].length)],
+                        createdAt: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : new Date()
+                    };
+
+                    if (batch) {
+                        const docRef = db.collection('products').doc();
+                        batch.set(docRef, product);
+                        newProducts.push({ id: docRef.id, ...product, createdAt: new Date() });
+                    } else {
+                        // Demo mode
+                        const id = Date.now().toString() + Math.random().toString(36).substring(2);
+                        newProducts.push({ id, ...product });
+                    }
+                }
+
+                if (batch) {
+                    await batch.commit();
+                    console.log(`Generated ${count} products successfully`);
+                }
+
+                // Add to local array
+                allProducts.unshift(...newProducts);
+                
+                // Update displays
+                if (currentCategory === 'all' || currentCategory === category) {
+                    filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                    displayProducts(filteredProducts);
+                }
+                
+                loadHomePageProducts();
+                updateProductStats();
+
+                // Reset form
+                document.getElementById('autoCategory').value = '';
+                document.getElementById('autoCount').value = '5';
+
+                generateBtn.textContent = originalText;
+                generateBtn.disabled = false;
+
+                showNotification(`สร้างสินค้า ${count} รายการสำเร็จ! 🚀`);
+
+            } catch (error) {
+                console.error('Error generating products:', error);
+                showNotification('เกิดข้อผิดพลาดในการสร้างสินค้า ❌', 'error');
+                
+                const generateBtn = document.getElementById('generateProductsBtn');
+                generateBtn.textContent = '🚀 สร้างสินค้าอัตโนมัติ';
+                generateBtn.disabled = false;
+            }
+        }
+
+        // Bulk update prices
+        async function bulkUpdatePrices() {
+            const category = document.getElementById('bulkCategory').value;
+            const multiplier = parseFloat(document.getElementById('bulkPriceMultiplier').value) || 1;
+
+            if (!category) {
+                showNotification('กรุณาเลือกหมวดหมู่สินค้า ⚠️', 'error');
+                return;
+            }
+
+            if (multiplier <= 0 || multiplier > 10) {
+                showNotification('ตัวคูณราคาต้องอยู่ระหว่าง 0.1-10 ⚠️', 'error');
+                return;
+            }
+
+            try {
+                const updateBtn = document.getElementById('bulkUpdatePriceBtn');
+                const originalText = updateBtn.textContent;
+                updateBtn.textContent = 'กำลังอัปเดต...';
+                updateBtn.disabled = true;
+
+                const productsToUpdate = allProducts.filter(p => p.category === category);
+                
+                if (productsToUpdate.length === 0) {
+                    showNotification('ไม่พบสินค้าในหมวดหมู่นี้ ⚠️', 'error');
+                    updateBtn.textContent = originalText;
+                    updateBtn.disabled = false;
+                    return;
+                }
+
+                if (db) {
+                    const batch = db.batch();
+                    productsToUpdate.forEach(product => {
+                        const docRef = db.collection('products').doc(product.id);
+                        const newPrice = Math.round(product.price * multiplier);
+                        batch.update(docRef, { price: newPrice });
+                        
+                        // Update local array
+                        const localProduct = allProducts.find(p => p.id === product.id);
+                        if (localProduct) {
+                            localProduct.price = newPrice;
+                        }
+                    });
+                    
+                    await batch.commit();
+                } else {
+                    // Demo mode
+                    productsToUpdate.forEach(product => {
+                        product.price = Math.round(product.price * multiplier);
+                    });
+                }
+
+                // Update displays
+                if (currentCategory === 'all' || currentCategory === category) {
+                    filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                    displayProducts(filteredProducts);
+                }
+                
+                loadHomePageProducts();
+                updateProductStats();
+
+                updateBtn.textContent = originalText;
+                updateBtn.disabled = false;
+
+                showNotification(`อัปเดตราคา ${productsToUpdate.length} รายการสำเร็จ! 💰`);
+
+            } catch (error) {
+                console.error('Error updating prices:', error);
+                showNotification('เกิดข้อผิดพลาดในการอัปเดตราคา ❌', 'error');
+                
+                const updateBtn = document.getElementById('bulkUpdatePriceBtn');
+                updateBtn.textContent = '💰 อัปเดตราคา';
+                updateBtn.disabled = false;
+            }
+        }
+
+        // Bulk delete products
+        async function bulkDeleteProducts() {
+            const category = document.getElementById('bulkCategory').value;
+
+            if (!category) {
+                showNotification('กรุณาเลือกหมวดหมู่สินค้า ⚠️', 'error');
+                return;
+            }
+
+            const productsToDelete = allProducts.filter(p => p.category === category);
+            
+            if (productsToDelete.length === 0) {
+                showNotification('ไม่พบสินค้าในหมวดหมู่นี้ ⚠️', 'error');
+                return;
+            }
+
+            // Create custom confirmation dialog
+            const confirmDialog = document.createElement('div');
+            confirmDialog.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            confirmDialog.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <h3 class="text-lg font-bold mb-4 text-red-600">⚠️ ยืนยันการลบ</h3>
+                    <p class="mb-4">คุณต้องการลบสินค้า ${productsToDelete.length} รายการในหมวดหมู่นี้หรือไม่?</p>
+                    <p class="text-sm text-gray-600 mb-6">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                    <div class="flex space-x-4">
+                        <button id="confirmDelete" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            ลบทั้งหมด
+                        </button>
+                        <button id="cancelDelete" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition">
+                            ยกเลิก
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(confirmDialog);
+
+            document.getElementById('cancelDelete').onclick = () => {
+                document.body.removeChild(confirmDialog);
+            };
+
+            document.getElementById('confirmDelete').onclick = async () => {
+                document.body.removeChild(confirmDialog);
+
+                try {
+                    const deleteBtn = document.getElementById('bulkDeleteBtn');
+                    const originalText = deleteBtn.textContent;
+                    deleteBtn.textContent = 'กำลังลบ...';
+                    deleteBtn.disabled = true;
+
+                    if (db) {
+                        const batch = db.batch();
+                        productsToDelete.forEach(product => {
+                            const docRef = db.collection('products').doc(product.id);
+                            batch.delete(docRef);
+                        });
+                        
+                        await batch.commit();
+                    }
+
+                    // Remove from local array
+                    allProducts = allProducts.filter(p => p.category !== category);
+                    
+                    // Update displays
+                    if (currentCategory === 'all' || currentCategory === category) {
+                        filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                        displayProducts(filteredProducts);
+                    }
+                    
+                    loadHomePageProducts();
+                    updateProductStats();
+
+                    deleteBtn.textContent = originalText;
+                    deleteBtn.disabled = false;
+
+                    showNotification(`ลบสินค้า ${productsToDelete.length} รายการสำเร็จ! 🗑️`);
+
+                } catch (error) {
+                    console.error('Error deleting products:', error);
+                    showNotification('เกิดข้อผิดพลาดในการลบสินค้า ❌', 'error');
+                    
+                    const deleteBtn = document.getElementById('bulkDeleteBtn');
+                    deleteBtn.textContent = '🗑️ ลบทั้งหมด';
+                    deleteBtn.disabled = false;
+                }
+            };
+        }
+
+        // Update product statistics
+        function updateProductStats() {
+            const totalProducts = allProducts.length;
+            const avgPrice = totalProducts > 0 ? Math.round(allProducts.reduce((sum, p) => sum + p.price, 0) / totalProducts) : 0;
+            
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('avgPrice').textContent = `฿${avgPrice.toLocaleString()}`;
+
+            // Category statistics
+            const categoryStats = {};
+            allProducts.forEach(product => {
+                categoryStats[product.category] = (categoryStats[product.category] || 0) + 1;
+            });
+
+            const categoryStatsContainer = document.getElementById('categoryStats');
+            const categoryNames = {
+                mobile: '📱 มือถือ',
+                computer: '💻 คอมพิวเตอร์',
+                fashion: '👗 แฟชั่น',
+                home: '🏠 บ้านและสวน',
+                game: '🎮 เกม',
+                health: '💊 สุขภาพ'
+            };
+
+            categoryStatsContainer.innerHTML = Object.entries(categoryStats)
+                .map(([category, count]) => `
+                    <div class="flex justify-between">
+                        <span>${categoryNames[category] || category}</span>
+                        <span class="font-semibold">${count} รายการ</span>
+                    </div>
+                `).join('');
+        }
+
+        // Update product management list
+        function updateProductManagementList(filterCategory = '') {
+            const container = document.getElementById('productManagementList');
+            const productsToShow = filterCategory ? 
+                allProducts.filter(p => p.category === filterCategory) : 
+                allProducts;
+
+            if (productsToShow.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-2 text-xs">ไม่มีสินค้าในหมวดหมู่นี้</p>';
+                return;
+            }
+
+            container.innerHTML = productsToShow.map(product => `
+                <div class="bg-white border rounded p-2 flex items-center justify-between hover:shadow-sm transition">
+                    <div class="flex items-center space-x-2">
+                        <img src="${product.image}" alt="${product.name}" class="w-8 h-8 object-cover rounded">
+                        <div>
+                            <h5 class="font-medium text-xs">${product.name.length > 20 ? product.name.substring(0, 20) + '...' : product.name}</h5>
+                            <p class="text-xs text-gray-500">฿${product.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button onclick="editProduct('${product.id}')" class="bg-blue-500 text-white px-1 py-1 rounded text-xs hover:bg-blue-600 transition">
+                            ✏️
+                        </button>
+                        <button onclick="deleteProduct('${product.id}')" class="bg-red-500 text-white px-1 py-1 rounded text-xs hover:bg-red-600 transition">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Edit product function
+        function editProduct(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            // Fill the edit form
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductCategory').value = product.category;
+            document.getElementById('editProductImage').value = product.image;
+            document.getElementById('editProductAffiliate').value = product.affiliateLink || '';
+            document.getElementById('editProductDescription').value = product.description;
+
+            // Show modal
+            document.getElementById('editProductModal').classList.remove('hidden');
+        }
+
+        // Save edited product
+        async function saveEditedProduct() {
+            const productId = document.getElementById('editProductId').value;
+            const name = document.getElementById('editProductName').value;
+            const price = parseInt(document.getElementById('editProductPrice').value);
+            const category = document.getElementById('editProductCategory').value;
+            const image = document.getElementById('editProductImage').value;
+            const affiliateLink = document.getElementById('editProductAffiliate').value;
+            const description = document.getElementById('editProductDescription').value;
+
+            if (!name || !price || !category || !image || !description) {
+                showNotification('กรุณากรอกข้อมูลให้ครบถ้วน ⚠️', 'error');
+                return;
+            }
+
+            try {
+                const saveBtn = document.getElementById('saveEditBtn');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = 'กำลังบันทึก...';
+                saveBtn.disabled = true;
+
+                const updatedProduct = {
+                    name,
+                    price,
+                    category,
+                    image,
+                    description,
+                    affiliateLink: affiliateLink || null
+                };
+
+                if (db) {
+                    // Update in Firestore
+                    await db.collection('products').doc(productId).update(updatedProduct);
+                }
+
+                // Update local array
+                const productIndex = allProducts.findIndex(p => p.id === productId);
+                if (productIndex !== -1) {
+                    allProducts[productIndex] = { ...allProducts[productIndex], ...updatedProduct };
+                }
+
+                // Update displays
+                if (currentCategory === 'all' || currentCategory === category) {
+                    filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                    displayProducts(filteredProducts);
+                }
+                
+                loadHomePageProducts();
+                updateProductStats();
+                updateProductManagementList(document.getElementById('manageCategory').value);
+
+                // Close modal
+                document.getElementById('editProductModal').classList.add('hidden');
+
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+
+                showNotification('แก้ไขสินค้าสำเร็จ! ✅');
+
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showNotification('เกิดข้อผิดพลาดในการแก้ไขสินค้า ❌', 'error');
+                
+                const saveBtn = document.getElementById('saveEditBtn');
+                saveBtn.textContent = '💾 บันทึกการแก้ไข';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Delete product function
+        async function deleteProduct(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            // Create custom confirmation dialog
+            const confirmDialog = document.createElement('div');
+            confirmDialog.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            confirmDialog.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                    <h3 class="text-lg font-bold mb-4 text-red-600">⚠️ ยืนยันการลบสินค้า</h3>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded">
+                        <div>
+                            <p class="font-medium">${product.name}</p>
+                            <p class="text-sm text-gray-600">฿${product.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-6">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                    <div class="flex space-x-4">
+                        <button id="confirmDeleteSingle" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            ลบสินค้า
+                        </button>
+                        <button id="cancelDeleteSingle" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition">
+                            ยกเลิก
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(confirmDialog);
+
+            document.getElementById('cancelDeleteSingle').onclick = () => {
+                document.body.removeChild(confirmDialog);
+            };
+
+            document.getElementById('confirmDeleteSingle').onclick = async () => {
+                document.body.removeChild(confirmDialog);
+
+                try {
+                    if (db) {
+                        // Delete from Firestore
+                        await db.collection('products').doc(productId).delete();
+                    }
+
+                    // Remove from local array
+                    allProducts = allProducts.filter(p => p.id !== productId);
+                    
+                    // Update displays
+                    if (currentCategory === 'all' || currentCategory === product.category) {
+                        filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                        displayProducts(filteredProducts);
+                    }
+                    
+                    loadHomePageProducts();
+                    updateProductStats();
+                    updateProductManagementList(document.getElementById('manageCategory').value);
+
+                    showNotification('ลบสินค้าสำเร็จ! 🗑️');
+
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    showNotification('เกิดข้อผิดพลาดในการลบสินค้า ❌', 'error');
+                }
+            };
+        }
+
+        // Add product to Firestore
+        async function addProduct() {
+            const name = document.getElementById('productName').value;
+            const price = parseInt(document.getElementById('productPrice').value);
+            const category = document.getElementById('productCategory').value;
+            const image = document.getElementById('productImage').value;
+            const affiliateLink = document.getElementById('productAffiliate').value;
+            const description = document.getElementById('productDescription').value;
+
+            if (name && price && category && image && description) {
+                try {
+                    // Show loading
+                    const addBtn = document.getElementById('addProductBtn');
+                    const originalText = addBtn.textContent;
+                    addBtn.textContent = 'กำลังเพิ่ม...';
+                    addBtn.disabled = true;
+
+                    const newProduct = {
+                        name,
+                        price,
+                        category,
+                        image,
+                        description,
+                        affiliateLink: affiliateLink || null,
+                        createdAt: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : new Date()
+                    };
+
+                    let productId;
+                    if (db) {
+                        // Add to Firestore
+                        const docRef = await db.collection('products').add(newProduct);
+                        productId = docRef.id;
+                        console.log('Product added with ID:', productId);
+                    } else {
+                        // Demo mode
+                        productId = Date.now().toString();
+                    }
+
+                    // Add to local array with generated ID
+                    allProducts.unshift({
+                        id: productId,
+                        ...newProduct,
+                        createdAt: new Date() // For local display
+                    });
+                    
+                    // Update filtered products if showing all or same category
+                    if (currentCategory === 'all' || currentCategory === category) {
+                        filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                        displayProducts(filteredProducts);
+                    }
+                    
+                    // Update home page products and stats
+                    loadHomePageProducts();
+                    updateProductStats();
+                    updateProductManagementList();
+                    
+                    // Clear form
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productCategory').value = '';
+                    document.getElementById('productImage').value = '';
+                    document.getElementById('productAffiliate').value = '';
+                    document.getElementById('productDescription').value = '';
+
+                    // Reset button
+                    addBtn.textContent = originalText;
+                    addBtn.disabled = false;
+
+                    showNotification('เพิ่มสินค้าสำเร็จ! ✅');
+
+                } catch (error) {
+                    console.error('Error adding product:', error);
+                    showNotification('เกิดข้อผิดพลาดในการเพิ่มสินค้า ❌', 'error');
+                    
+                    // Reset button
+                    const addBtn = document.getElementById('addProductBtn');
+                    addBtn.textContent = 'เพิ่มสินค้า';
+                    addBtn.disabled = false;
+                }
+            } else {
+                showNotification('กรุณากรอกข้อมูลให้ครบถ้วน (ลิงค์ Affiliate ไม่บังคับ) ⚠️', 'error');
+            }
+        }
+
+        // Logout with Firebase Auth
+        async function logout() {
+            try {
+                if (auth && currentUser) {
+                    await auth.signOut();
+                    showNotification('ออกจากระบบแล้ว 👋');
+                } else {
+                    // Fallback for demo mode
+                    currentUser = null;
+                    updateAdminUI(false);
+                    showNotification('ออกจากระบบแล้ว 👋');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showNotification('เกิดข้อผิดพลาดในการออกจากระบบ ❌', 'error');
+            }
+        }
+
+        // Show Flash Sale
+        function showFlashSale(type) {
+            showPage('flashsale');
+            
+            const titles = {
+                'main': '🔥 Flash Sale หลัก',
+                'today': '📅 Flash Sale วันนี้',
+                'weekend': '🎯 Flash Sale สุดสัปดาห์',
+                'mega': '💥 Mega Flash Sale'
+            };
+            
+            document.getElementById('flashSaleTitle').textContent = titles[type];
+            
+            // Show flash sale products with discount
+            const flashSaleProducts = allProducts.map(product => ({
+                ...product,
+                originalPrice: product.price,
+                price: Math.floor(product.price * 0.7), // 30% discount
+                discount: 30
+            }));
+            
+            displayFlashSaleProducts(flashSaleProducts);
+            startCountdown();
+        }
+
+        // Show Promotion
+        function showPromotion(category) {
+            showPage('promotion');
+            
+            const titles = {
+                'mobile': '📱 โปรโมชั่นมือถือ',
+                'computer': '💻 โปรโมชั่นคอมพิวเตอร์',
+                'fashion': '👗 โปรโมชั่นแฟชั่น',
+                'home': '🏠 โปรโมชั่นบ้านและสวน',
+                'game': '🎮 โปรโมชั่นเกม',
+                'health': '💊 โปรโมชั่นสุขภาพ'
+            };
+            
+            document.getElementById('promotionTitle').textContent = titles[category];
+            
+            // Filter products by category and add promotion
+            const promotionProducts = allProducts
+                .filter(product => product.category === category)
+                .map(product => ({
+                    ...product,
+                    originalPrice: product.price,
+                    price: Math.floor(product.price * 0.8), // 20% discount
+                    discount: 20,
+                    freeGift: true
+                }));
+            
+            displayPromotionProducts(promotionProducts);
+        }
+
+        // Display Flash Sale Products
+        function displayFlashSaleProducts(products) {
+            const container = document.getElementById('flashSaleProducts');
+            
+            container.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in relative">
+                    <div class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        -${product.discount}%
+                    </div>
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <span class="text-xl font-bold text-red-600">฿${product.price.toLocaleString()}</span>
+                                <span class="text-sm text-gray-500 line-through ml-2">฿${product.originalPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                                ⚡ เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Display Promotion Products
+        function displayPromotionProducts(products) {
+            const container = document.getElementById('promotionProducts');
+            
+            container.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in relative">
+                    <div class="absolute top-2 left-2 bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        -${product.discount}%
+                    </div>
+                    ${product.freeGift ? `
+                        <div class="absolute top-2 right-2 bg-pink-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                            🎁 ฟรีของแถม
+                        </div>
+                    ` : ''}
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <span class="text-xl font-bold text-purple-600">฿${product.price.toLocaleString()}</span>
+                                <span class="text-sm text-gray-500 line-through ml-2">฿${product.originalPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                                🎁 เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Start countdown timer
+        function startCountdown() {
+            let hours = 23;
+            let minutes = 59;
+            let seconds = 45;
+            
+            const countdownElement = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                seconds--;
+                
+                if (seconds < 0) {
+                    seconds = 59;
+                    minutes--;
+                }
+                
+                if (minutes < 0) {
+                    minutes = 59;
+                    hours--;
+                }
+                
+                if (hours < 0) {
+                    clearInterval(timer);
+                    countdownElement.textContent = "00:00:00";
+                    return;
+                }
+                
+                const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                countdownElement.textContent = formattedTime;
+            }, 1000);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium ${
+                type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            } fade-in`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Draggable modal functionality
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+
+        function initDraggableModal() {
+            const modal = document.getElementById('adminModalContent');
+            const modalContainer = document.getElementById('adminModal');
+            const header = document.getElementById('modalHeader');
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Only allow dragging from header area
+            header.addEventListener('mousedown', function(e) {
+                // Don't drag if clicking on close button
+                if (e.target.id === 'closeAdminModal' || e.target.closest('#closeAdminModal')) {
+                    return;
+                }
+                startDrag(e);
+            });
+            
+            // Also allow dragging from modal background (not form elements)
+            modal.addEventListener('mousedown', function(e) {
+                // Only allow dragging from empty areas, not form elements
+                if (e.target === modal || e.target.closest('#modalHeader')) {
+                    if (e.target.id !== 'closeAdminModal' && !e.target.closest('#closeAdminModal')) {
+                        startDrag(e);
+                    }
+                }
+            });
+            
+            function startDrag(e) {
+                isDragging = true;
+                const rect = modal.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                
+                modal.style.position = 'fixed';
+                modal.style.zIndex = '9999';
+                modal.style.transition = 'none';
+                modal.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+                modal.style.transform = 'scale(1.02)';
+                document.body.style.cursor = 'grabbing';
+                
+                e.preventDefault();
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const x = e.clientX - dragOffset.x;
+                const y = e.clientY - dragOffset.y;
+                
+                // Keep modal within viewport bounds
+                const maxX = window.innerWidth - modal.offsetWidth;
+                const maxY = window.innerHeight - modal.offsetHeight;
+                
+                const boundedX = Math.max(0, Math.min(x, maxX));
+                const boundedY = Math.max(0, Math.min(y, maxY));
+                
+                modal.style.left = boundedX + 'px';
+                modal.style.top = boundedY + 'px';
+                modal.style.transform = 'none';
+                
+                e.preventDefault();
+            }
+            
+            function stopDrag() {
+                if (isDragging) {
+                    isDragging = false;
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.boxShadow = '';
+                    modal.style.transform = '';
+                    document.body.style.cursor = '';
+                    
+                    // Smooth transition back
+                    setTimeout(() => {
+                        modal.style.transition = '';
+                    }, 200);
+                }
+            }
+            
+            // Reset modal position when opened
+            modalContainer.addEventListener('click', function(e) {
+                if (e.target === modalContainer) {
+                    resetModalPosition();
+                }
+            });
+            
+            function resetModalPosition() {
+                modal.style.position = '';
+                modal.style.left = '';
+                modal.style.top = '';
+                modal.style.transform = '';
+                modal.style.zIndex = '';
+                modal.style.boxShadow = '';
+                document.body.style.cursor = '';
+            }
+            
+            // Reset position when modal is shown
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        if (!modalContainer.classList.contains('hidden')) {
+                            resetModalPosition();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(modalContainer, { attributes: true });
+        }
+
+        // Enhanced scroll functionality for modal content
+        function initModalScroll() {
+            const modal = document.getElementById('adminModalContent');
+            
+            // Smooth scrolling with mouse wheel
+            modal.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                
+                const scrollAmount = e.deltaY * 0.5; // Adjust scroll sensitivity
+                modal.scrollTop += scrollAmount;
+                
+                // Add smooth scroll effect
+                modal.style.scrollBehavior = 'smooth';
+                setTimeout(() => {
+                    modal.style.scrollBehavior = 'auto';
+                }, 100);
+            });
+            
+            // Custom scrollbar styling
+            const style = document.createElement('style');
+            style.textContent = `
+                #adminModalContent::-webkit-scrollbar {
+                    width: 8px;
+                }
+                
+                #adminModalContent::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 4px;
+                }
+                
+                #adminModalContent::-webkit-scrollbar-thumb {
+                    background: #c1c1c1;
+                    border-radius: 4px;
+                    transition: background 0.2s;
+                }
+                
+                #adminModalContent::-webkit-scrollbar-thumb:hover {
+                    background: #a1a1a1;
+                }
+                
+                #adminModalContent {
+                    scrollbar-width: thin;
+                    scrollbar-color: #c1c1c1 #f1f1f1;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+            initDraggableModal();
+            initModalScroll();
+
+            // Cart modal
+            document.getElementById('cartBtn').addEventListener('click', showCartModal);
+            document.getElementById('closeCartModal').addEventListener('click', () => {
+                document.getElementById('cartModal').classList.add('hidden');
+            });
+
+            // Admin modal
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.remove('hidden');
+            });
+            document.getElementById('closeAdminModal').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.add('hidden');
+            });
+
+            // Admin functions
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('addProductBtn').addEventListener('click', addProduct);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            // Auto generation functions
+            document.getElementById('generateProductsBtn').addEventListener('click', generateProducts);
+            document.getElementById('bulkUpdatePriceBtn').addEventListener('click', bulkUpdatePrices);
+            document.getElementById('bulkDeleteBtn').addEventListener('click', bulkDeleteProducts);
+
+            // Product management functions
+            document.getElementById('manageCategory').addEventListener('change', function() {
+                updateProductManagementList(this.value);
+            });
+
+            // Edit product modal
+            document.getElementById('closeEditModal').addEventListener('click', () => {
+                document.getElementById('editProductModal').classList.add('hidden');
+            });
+            document.getElementById('cancelEditBtn').addEventListener('click', () => {
+                document.getElementById('editProductModal').classList.add('hidden');
+            });
+            document.getElementById('saveEditBtn').addEventListener('click', saveEditedProduct);
+
+            // Contact form
+            document.querySelector('#contactPage form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                showNotification('ส่งข้อความเรียบร้อยแล้ว! เราจะติดต่อกลับในเร็วๆ นี้ 📧');
+                this.reset();
+            });
+
+            // Close modals on outside click
+            document.getElementById('cartModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.add('hidden');
+                }
+            });
+            document.getElementById('adminModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.add('hidden');
+                }
+            });
+            document.getElementById('editProductModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96e8f326511810d2',t:'MTc1NTA5NTg0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
