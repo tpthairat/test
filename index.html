@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ร้านค้าออนไลน์ - Firebase Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .category-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-blue-600 cursor-pointer" onclick="showPage('home')">🛍️ Firebase Store</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#" onclick="showPage('home')" class="text-gray-700 hover:text-blue-600 transition">หน้าแรก</a>
+                    
+                    <!-- Flash Sale Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            ⚡ Flash Sale
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="#" onclick="showFlashSale('main')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🔥 Flash Sale หลัก</a>
+                                <a href="#" onclick="showFlashSale('today')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">📅 Flash Sale วันนี้</a>
+                                <a href="#" onclick="showFlashSale('weekend')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🎯 Flash Sale สุดสัปดาห์</a>
+                                <a href="#" onclick="showFlashSale('mega')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💥 Mega Flash Sale</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- โปรโมชั่น Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            🎁 โปรโมชั่น
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="#" onclick="showPromotion('mobile')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">📱 โปรโมชั่นมือถือ</a>
+                                <a href="#" onclick="showPromotion('computer')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💻 โปรโมชั่นคอมพิวเตอร์</a>
+                                <a href="#" onclick="showPromotion('fashion')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">👗 โปรโมชั่นแฟชั่น</a>
+                                <a href="#" onclick="showPromotion('home')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🏠 โปรโมชั่นบ้านและสวน</a>
+                                <a href="#" onclick="showPromotion('game')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🎮 โปรโมชั่นเกม</a>
+                                <a href="#" onclick="showPromotion('health')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">💊 โปรโมชั่นสุขภาพ</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ร้านค้า Dropdown -->
+                    <div class="relative group">
+                        <button class="text-gray-700 hover:text-blue-600 transition flex items-center">
+                            🛒 ร้านค้า
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="https://shopee.co.th" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">🟠 Shopee</a>
+                                <a href="https://lazada.co.th" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">🔵 Lazada</a>
+                                <a href="https://tiktok.com/shop" target="_blank" class="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600">⚫ TikTok Shop</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="#" onclick="showPage('about')" class="text-gray-700 hover:text-blue-600 transition">เกี่ยวกับเรา</a>
+                    <a href="#" onclick="showPage('contact')" class="text-gray-700 hover:text-blue-600 transition">ติดต่อเรา</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="cartBtn" class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        🛒 ตะกร้า (<span id="cartCount">0</span>)
+                    </button>
+                    <button id="adminBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">
+                        👤 แอดมิน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div id="heroSection" class="hero-gradient text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-6">ยินดีต้อนรับสู่ Firebase Store</h1>
+            <p class="text-xl mb-8">ร้านค้าออนไลน์ที่ดีที่สุด พร้อมสินค้าคุณภาพและบริการที่เป็นเลิศ</p>
+            <button onclick="showPage('products')" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                เริ่มช้อปปิ้ง
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Home Page -->
+        <div id="homePage" class="fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">🚚</div>
+                    <h3 class="text-xl font-semibold mb-2">จัดส่งฟรี</h3>
+                    <p class="text-gray-600">สั่งซื้อขั้นต่ำ 1,000 บาท</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-xl font-semibold mb-2">ปลอดภัย 100%</h3>
+                    <p class="text-gray-600">ระบบชำระเงินที่ปลอดภัย</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl mb-4">⭐</div>
+                    <h3 class="text-xl font-semibold mb-2">คุณภาพดี</h3>
+                    <p class="text-gray-600">สินค้าคุณภาพจากแบรนด์ดัง</p>
+                </div>
+            </div>
+
+            <!-- Popular Categories Section -->
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-center mb-8">🔥 หมวดหมู่ยอดนิยม</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div onclick="showPage('products'); filterByCategory('mobile')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">📱</div>
+                        <h3 class="font-semibold">มือถือ</h3>
+                        <p class="text-sm text-gray-500">สมาร์ทโฟน</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('computer')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">💻</div>
+                        <h3 class="font-semibold">คอมพิวเตอร์</h3>
+                        <p class="text-sm text-gray-500">แล็ปท็อป PC</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('fashion')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">👗</div>
+                        <h3 class="font-semibold">แฟชั่น</h3>
+                        <p class="text-sm text-gray-500">เสื้อผ้า</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('home')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">🏠</div>
+                        <h3 class="font-semibold">บ้านและสวน</h3>
+                        <p class="text-sm text-gray-500">ของใช้ในบ้าน</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('game')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">🎮</div>
+                        <h3 class="font-semibold">เกม</h3>
+                        <p class="text-sm text-gray-500">คอนโซล เกม</p>
+                    </div>
+                    <div onclick="showPage('products'); filterByCategory('health')" class="bg-white p-6 rounded-lg shadow-md text-center cursor-pointer hover:shadow-lg transition transform hover:scale-105">
+                        <div class="text-4xl mb-3">💊</div>
+                        <h3 class="font-semibold">สุขภาพ</h3>
+                        <p class="text-sm text-gray-500">วิตามิน อาหารเสริม</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Products by Category -->
+            <div class="space-y-12">
+                <!-- Mobile Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">📱</span>
+                            สินค้ามือถือแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('mobile')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="mobileProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Computer Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">💻</span>
+                            สินค้าคอมพิวเตอร์แนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('computer')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="computerProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Fashion Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">👗</span>
+                            สินค้าแฟชั่นแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('fashion')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="fashionProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Home Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">🏠</span>
+                            สินค้าบ้านและสวนแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('home')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="homeProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Game Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">🎮</span>
+                            สินค้าเกมแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('game')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="gameProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+                <!-- Health Products -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="text-3xl mr-3">💊</span>
+                            สินค้าสุขภาพแนะนำ
+                        </h3>
+                        <button onclick="showPage('products'); filterByCategory('health')" class="text-blue-600 hover:text-blue-800 font-medium">
+                            ดูทั้งหมด →
+                        </button>
+                    </div>
+                    <div id="healthProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Page -->
+        <div id="productsPage" class="hidden">
+            <!-- Category Filter -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">หมวดหมู่สินค้า</h2>
+                <div class="flex flex-wrap gap-2" id="categoryFilter">
+                    <button onclick="filterByCategory('all')" class="category-btn category-active px-4 py-2 rounded-lg border transition">
+                        ทั้งหมด
+                    </button>
+                    <button onclick="filterByCategory('mobile')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        📱 มือถือ
+                    </button>
+                    <button onclick="filterByCategory('computer')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        💻 คอมพิวเตอร์
+                    </button>
+                    <button onclick="filterByCategory('fashion')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        👗 แฟชั่น
+                    </button>
+                    <button onclick="filterByCategory('home')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        🏠 บ้านและสวน
+                    </button>
+                    <button onclick="filterByCategory('game')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        🎮 เกม
+                    </button>
+                    <button onclick="filterByCategory('health')" class="category-btn px-4 py-2 rounded-lg border hover:bg-blue-600 hover:text-white transition">
+                        💊 สุขภาพ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="flex justify-center items-center py-20">
+                <div class="loading"></div>
+                <span class="ml-4 text-gray-600">กำลังโหลดสินค้า...</span>
+            </div>
+
+            <!-- Products Grid -->
+            <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-20 hidden">
+                <div class="text-6xl mb-4">📦</div>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">ยังไม่มีสินค้า</h3>
+                <p class="text-gray-500">กรุณาเข้าสู่ระบบแอดมินเพื่อเพิ่มสินค้า</p>
+            </div>
+        </div>
+
+        <!-- About Page -->
+        <div id="aboutPage" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold mb-6 text-center">เกี่ยวกับเรา</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">🏪 เรื่องราวของเรา</h3>
+                        <p class="text-gray-600 mb-4">
+                            Firebase Store เป็นร้านค้าออนไลน์ที่มุ่งมั่นในการนำเสนอสินค้าเทคโนโลยีคุณภาพสูง 
+                            พร้อมบริการที่เป็นเลิศให้กับลูกค้าทุกท่าน
+                        </p>
+                        <p class="text-gray-600">
+                            เราเชื่อว่าเทคโนโลยีที่ดีสามารถเปลี่ยนแปลงชีวิตของผู้คนให้ดีขึ้น 
+                            จึงคัดสรรสินค้าคุณภาพจากแบรนด์ชั้นนำมาให้ลูกค้าได้เลือกสรร
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">🎯 วิสัยทัศน์</h3>
+                        <ul class="text-gray-600 space-y-2">
+                            <li>• มุ่งมั่นให้บริการที่เป็นเลิศ</li>
+                            <li>• นำเสนอสินค้าคุณภาพในราคาที่เป็นธรรม</li>
+                            <li>• สร้างประสบการณ์การช้อปปิ้งที่ดีที่สุด</li>
+                            <li>• พัฒนาเทคโนโลยีเพื่อความสะดวกของลูกค้า</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Sale Page -->
+        <div id="flashSalePage" class="hidden fade-in">
+            <div class="bg-gradient-to-r from-red-500 to-orange-500 text-white p-8 rounded-lg mb-8">
+                <h2 class="text-4xl font-bold mb-4 text-center">⚡ Flash Sale</h2>
+                <div id="flashSaleTitle" class="text-xl text-center mb-4">🔥 Flash Sale หลัก</div>
+                <div class="text-center">
+                    <div class="inline-flex items-center bg-white text-red-600 px-6 py-2 rounded-full font-bold">
+                        ⏰ เหลือเวลา: <span id="countdown" class="ml-2">23:59:45</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="flashSaleProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </div>
+
+        <!-- Promotion Page -->
+        <div id="promotionPage" class="hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-8 rounded-lg mb-8">
+                <h2 class="text-4xl font-bold mb-4 text-center">🎁 โปรโมชั่น</h2>
+                <div id="promotionTitle" class="text-xl text-center mb-4">📱 โปรโมชั่นมือถือ</div>
+                <div class="text-center">
+                    <div class="inline-flex items-center bg-white text-purple-600 px-6 py-2 rounded-full font-bold">
+                        🎯 ลดสูงสุด 50% + ฟรีของแถม
+                    </div>
+                </div>
+            </div>
+            
+            <div id="promotionProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </div>
+
+        <!-- Contact Page -->
+        <div id="contactPage" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold mb-6 text-center">ติดต่อเรา</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">📞 ข้อมูลติดต่อ</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📍</span>
+                                <div>
+                                    <p class="font-medium">ที่อยู่</p>
+                                    <p class="text-gray-600">123 ถนนเทคโนโลยี แขวงนวัตกรรม เขตดิจิทัล กรุงเทพฯ 10110</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📞</span>
+                                <div>
+                                    <p class="font-medium">โทรศัพท์</p>
+                                    <p class="text-gray-600">02-123-4567</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📧</span>
+                                <div>
+                                    <p class="font-medium">อีเมล</p>
+                                    <p class="text-gray-600">info@firebasestore.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">🕒</span>
+                                <div>
+                                    <p class="font-medium">เวลาทำการ</p>
+                                    <p class="text-gray-600">จันทร์-ศุกร์ 9:00-18:00 น.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">💬 ส่งข้อความถึงเรา</h3>
+                        <form class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
+                                <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                                <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ข้อความ</label>
+                                <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                                ส่งข้อความ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">🛒 ตะกร้าสินค้า</h2>
+                        <button id="closeCartModal" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div id="cartItems"></div>
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center text-lg font-bold">
+                            <span>รวมทั้งหมด:</span>
+                            <span id="cartTotal">฿0</span>
+                        </div>
+                        <button class="w-full bg-green-600 text-white py-2 rounded-lg mt-4 hover:bg-green-700 transition">
+                            สั่งซื้อ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">👤 เข้าสู่ระบบแอดมิน</h2>
+                        <button id="closeAdminModal" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div id="loginForm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+                            <input type="email" id="adminEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="admin@example.com">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                            <input type="password" id="adminPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
+                        </div>
+                        <button id="loginBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                            เข้าสู่ระบบ
+                        </button>
+                    </div>
+                    <div id="adminPanel" class="hidden">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-4">🛠️ จัดการเว็บไซต์</h3>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <button onclick="showAdminSection('products')" id="adminProductsBtn" class="admin-section-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                    📦 จัดการสินค้า
+                                </button>
+                                <button onclick="showAdminSection('pages')" id="adminPagesBtn" class="admin-section-btn bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                                    📄 จัดการหน้าเว็บ
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Product Management -->
+                        <div id="adminProductsSection" class="mb-4">
+                            <h4 class="text-md font-semibold mb-2">เพิ่มสินค้าใหม่</h4>
+                            <input type="text" id="productName" placeholder="ชื่อสินค้า" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <input type="number" id="productPrice" placeholder="ราคา" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <select id="productCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                                <option value="">เลือกหมวดหมู่</option>
+                                <option value="mobile">📱 มือถือ</option>
+                                <option value="computer">💻 คอมพิวเตอร์</option>
+                                <option value="fashion">👗 แฟชั่น</option>
+                                <option value="home">🏠 บ้านและสวน</option>
+                                <option value="game">🎮 เกม</option>
+                                <option value="health">💊 สุขภาพ</option>
+                            </select>
+                            <input type="url" id="productImage" placeholder="URL รูปภาพ" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <input type="url" id="productAffiliate" placeholder="ลิงค์ Affiliate (เช่น https://shopee.co.th/...)" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <textarea id="productDescription" placeholder="รายละเอียดสินค้า" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 h-20"></textarea>
+                            <button id="addProductBtn" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                                เพิ่มสินค้า
+                            </button>
+                        </div>
+
+                        <!-- Page Management -->
+                        <div id="adminPagesSection" class="mb-4 hidden">
+                            <h4 class="text-md font-semibold mb-2">จัดการหน้าเว็บ</h4>
+                            <div class="space-y-2">
+                                <button onclick="editPage('home')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    🏠 แก้ไขหน้าแรก
+                                </button>
+                                <button onclick="editPage('about')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    ℹ️ แก้ไขหน้าเกี่ยวกับเรา
+                                </button>
+                                <button onclick="editPage('contact')" class="w-full text-left bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                    📞 แก้ไขหน้าติดต่อเรา
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="logoutBtn" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">🛍️ Firebase Store</h3>
+                    <p class="text-gray-300 mb-4">ร้านค้าออนไลน์ที่ดีที่สุด พร้อมสินค้าคุณภาพและบริการที่เป็นเลิศ</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white transition">📘</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">📷</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">🐦</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition">📺</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">เมนูหลัก</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="showPage('home')" class="text-gray-300 hover:text-white transition">หน้าแรก</a></li>
+                        <li><a href="#" onclick="showPage('products')" class="text-gray-300 hover:text-white transition">สินค้า</a></li>
+                        <li><a href="#" onclick="showPage('about')" class="text-gray-300 hover:text-white transition">เกี่ยวกับเรา</a></li>
+                        <li><a href="#" onclick="showPage('contact')" class="text-gray-300 hover:text-white transition">ติดต่อเรา</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">หมวดหมู่สินค้า</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('mobile')" class="text-gray-300 hover:text-white transition">📱 มือถือ</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('computer')" class="text-gray-300 hover:text-white transition">💻 คอมพิวเตอร์</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('fashion')" class="text-gray-300 hover:text-white transition">👗 แฟชั่น</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('home')" class="text-gray-300 hover:text-white transition">🏠 บ้านและสวน</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('game')" class="text-gray-300 hover:text-white transition">🎮 เกม</a></li>
+                        <li><a href="#" onclick="showPage('products'); filterByCategory('health')" class="text-gray-300 hover:text-white transition">💊 สุขภาพ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">ติดต่อเรา</h4>
+                    <ul class="space-y-2 text-gray-300">
+                        <li>📍 123 ถนนเทคโนโลยี แขวงนวัตกรรม</li>
+                        <li>📞 02-123-4567</li>
+                        <li>📧 info@firebasestore.com</li>
+                        <li>🕒 จันทร์-ศุกร์ 9:00-18:00 น.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-300">&copy; 2024 Firebase Store. สงวนลิขสิทธิ์ทั้งหมด.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase Configuration - แทนที่ด้วย config จริงของคุณ
+        const firebaseConfig = {
+           apiKey: "AIzaSyAmsiJelUN1V8C9mCC1Osy-uSZAuk3M7Lw",
+  authDomain: "test-95403.firebaseapp.com",
+  databaseURL: "https://test-95403-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "test-95403",
+  storageBucket: "test-95403.firebasestorage.app",
+  messagingSenderId: "30370027223",
+  appId: "1:30370027223:web:be434cdf70770ea44f4292",
+        };
+
+        // Initialize Firebase
+        let db, auth;
+        let cart = [];
+        let currentUser = null;
+        let allProducts = []; // เก็บสินค้าทั้งหมดจาก Firebase
+
+        let currentPage = 'home';
+        let currentCategory = 'all';
+        let filteredProducts = [];
+
+        // Initialize app
+        function initApp() {
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                
+                console.log('Firebase initialized successfully');
+                
+                // Load products from Firestore
+                loadProductsFromFirestore();
+                
+                // Initialize with sample data if no products exist
+                initializeSampleData();
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                showNotification('เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase ❌', 'error');
+                
+                // Fallback to demo data
+                initializeDemoData();
+            }
+        }
+
+        // Initialize sample data for first time setup
+        async function initializeSampleData() {
+            try {
+                const snapshot = await db.collection('products').limit(1).get();
+                
+                if (snapshot.empty) {
+                    console.log('No products found, adding sample data...');
+                    
+                    const sampleProducts = [
+                        {
+                            name: 'iPhone 15 Pro',
+                            price: 39900,
+                            category: 'mobile',
+                            image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
+                            description: 'สมาร์ทโฟนรุ่นล่าสุดจาก Apple พร้อมชิป A17 Pro',
+                            affiliateLink: 'https://shopee.co.th/iphone-15-pro',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'MacBook Air M2',
+                            price: 42900,
+                            category: 'computer',
+                            image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400',
+                            description: 'แล็ปท็อปที่บางเบาและทรงพลังที่สุดจาก Apple',
+                            affiliateLink: 'https://lazada.co.th/macbook-air-m2',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'เสื้อยืดแฟชั่น',
+                            price: 590,
+                            category: 'fashion',
+                            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
+                            description: 'เสื้อยืดคุณภาพดี ผ้านิ่ม ใส่สบาย',
+                            affiliateLink: 'https://shopee.co.th/fashion-tshirt',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'ต้นไผ่ในกระถาง',
+                            price: 1200,
+                            category: 'home',
+                            image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400',
+                            description: 'ต้นไผ่สวยงาม เหมาะสำหรับตั้งในบ้าน',
+                            affiliateLink: 'https://lazada.co.th/bamboo-plant',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'PlayStation 5',
+                            price: 18900,
+                            category: 'game',
+                            image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400',
+                            description: 'เครื่องเกมคอนโซลรุ่นล่าสุดจาก Sony',
+                            affiliateLink: 'https://shopee.co.th/playstation-5',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        },
+                        {
+                            name: 'วิตามินซี 1000mg',
+                            price: 450,
+                            category: 'health',
+                            image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400',
+                            description: 'วิตามินซีเสริมภูมิคุ้มกัน บรรจุ 60 เม็ด',
+                            affiliateLink: 'https://lazada.co.th/vitamin-c',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }
+                    ];
+
+                    // Add sample products to Firestore
+                    const batch = db.batch();
+                    sampleProducts.forEach(product => {
+                        const docRef = db.collection('products').doc();
+                        batch.set(docRef, product);
+                    });
+                    
+                    await batch.commit();
+                    console.log('Sample products added successfully');
+                    showNotification('เพิ่มข้อมูลตัวอย่างเรียบร้อย! 🎉');
+                    
+                    // Reload products
+                    loadProductsFromFirestore();
+                }
+            } catch (error) {
+                console.error('Error initializing sample data:', error);
+            }
+        }
+
+        // Initialize demo data as fallback
+        function initializeDemoData() {
+            allProducts = [
+                {
+                    id: '1',
+                    name: 'iPhone 15 Pro',
+                    price: 39900,
+                    category: 'mobile',
+                    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400',
+                    description: 'สมาร์ทโฟนรุ่นล่าสุดจาก Apple พร้อมชิป A17 Pro',
+                    affiliateLink: 'https://shopee.co.th/iphone-15-pro'
+                },
+                {
+                    id: '2',
+                    name: 'MacBook Air M2',
+                    price: 42900,
+                    category: 'computer',
+                    image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400',
+                    description: 'แล็ปท็อปที่บางเบาและทรงพลังที่สุดจาก Apple',
+                    affiliateLink: 'https://lazada.co.th/macbook-air-m2'
+                }
+            ];
+            
+            filteredProducts = [...allProducts];
+            loadProducts();
+            loadHomePageProducts();
+        }
+
+        // Load products from Firestore
+        async function loadProductsFromFirestore() {
+            try {
+                document.getElementById('loadingSpinner').classList.remove('hidden');
+                document.getElementById('productsGrid').classList.add('hidden');
+                
+                const snapshot = await db.collection('products').orderBy('createdAt', 'desc').get();
+                
+                allProducts = [];
+                snapshot.forEach(doc => {
+                    allProducts.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                console.log(`Loaded ${allProducts.length} products from Firestore`);
+                
+                filteredProducts = [...allProducts];
+                loadProducts();
+                loadHomePageProducts();
+                
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showNotification('เกิดข้อผิดพลาดในการโหลดสินค้า ❌', 'error');
+                
+                // Fallback to demo data
+                initializeDemoData();
+            }
+        }
+
+        // Load products for home page
+        function loadHomePageProducts() {
+            const categories = ['mobile', 'computer', 'fashion', 'home', 'game', 'health'];
+            
+            categories.forEach(category => {
+                const categoryProducts = allProducts.filter(product => product.category === category).slice(0, 3);
+                const containerId = category + 'Products';
+                const container = document.getElementById(containerId);
+                
+                if (container && categoryProducts.length > 0) {
+                    container.innerHTML = categoryProducts.map(product => `
+                        <div class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover rounded-lg mb-3">
+                            <h4 class="font-semibold text-sm mb-2">${product.name}</h4>
+                            <p class="text-xs text-gray-600 mb-2">${product.description.substring(0, 50)}...</p>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-lg font-bold text-blue-600">฿${product.price.toLocaleString()}</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="addToCart('${product.id}')" class="flex-1 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition">
+                                    🛒 เพิ่ม
+                                </button>
+                                ${product.affiliateLink ? `
+                                    <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition text-center">
+                                        🛍️ ซื้อ
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else if (container) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">ยังไม่มีสินค้าในหมวดนี้</p>';
+                }
+            });
+        }
+
+        // Load products with loading state
+        function loadProducts() {
+            setTimeout(() => {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('productsGrid').classList.remove('hidden');
+                displayProducts(filteredProducts);
+            }, 500);
+        }
+
+        // Show page function
+        function showPage(page) {
+            // Hide all pages
+            document.getElementById('heroSection').style.display = page === 'home' ? 'block' : 'none';
+            document.getElementById('homePage').style.display = page === 'home' ? 'block' : 'none';
+            document.getElementById('productsPage').style.display = page === 'products' ? 'block' : 'none';
+            document.getElementById('aboutPage').style.display = page === 'about' ? 'block' : 'none';
+            document.getElementById('contactPage').style.display = page === 'contact' ? 'block' : 'none';
+            document.getElementById('flashSalePage').style.display = page === 'flashsale' ? 'block' : 'none';
+            document.getElementById('promotionPage').style.display = page === 'promotion' ? 'block' : 'none';
+            
+            currentPage = page;
+            
+            // Load products if showing products page
+            if (page === 'products') {
+                loadProducts();
+            }
+        }
+
+        // Filter by category
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // Update category buttons
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('category-active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('category-active');
+            }
+            
+            // Filter products
+            if (category === 'all') {
+                filteredProducts = [...allProducts];
+            } else {
+                filteredProducts = allProducts.filter(product => product.category === category);
+            }
+            
+            displayProducts(filteredProducts);
+        }
+
+        // Display products
+        function displayProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            
+            if (products.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                grid.classList.add('hidden');
+                return;
+            }
+
+            grid.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xl font-bold text-blue-600">฿${product.price.toLocaleString()}</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                🛒 เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add to cart
+        function addToCart(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ ...product, quantity: 1 });
+                }
+                updateCartUI();
+                
+                // Show success message
+                showNotification('เพิ่มสินค้าลงตะกร้าแล้ว! 🛒');
+            }
+        }
+
+        // Update cart UI
+        function updateCartUI() {
+            const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = cartCount;
+        }
+
+        // Show cart modal
+        function showCartModal() {
+            const modal = document.getElementById('cartModal');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center py-4">ตะกร้าว่าง</p>';
+                cartTotal.textContent = '฿0';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded">
+                            <div>
+                                <h4 class="font-medium">${item.name}</h4>
+                                <p class="text-sm text-gray-500">฿${item.price.toLocaleString()} x ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateQuantity('${item.id}', -1)" class="bg-gray-200 px-2 py-1 rounded">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateQuantity('${item.id}', 1)" class="bg-gray-200 px-2 py-1 rounded">+</button>
+                            <button onclick="removeFromCart('${item.id}')" class="text-red-500 ml-2">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartTotal.textContent = `฿${total.toLocaleString()}`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        // Update quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCartUI();
+                    showCartModal(); // Refresh modal
+                }
+            }
+        }
+
+        // Remove from cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+            showCartModal(); // Refresh modal
+        }
+
+        // Admin login (demo)
+        function adminLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            // Demo login (ใช้ Firebase Auth ในการใช้งานจริง)
+            if (email === 'admin@demo.com' && password === 'admin123') {
+                currentUser = { email: email };
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                showNotification('เข้าสู่ระบบสำเร็จ! 👤');
+            } else {
+                showNotification('อีเมลหรือรหัสผ่านไม่ถูกต้อง ❌', 'error');
+            }
+        }
+
+        // Show admin section
+        function showAdminSection(section) {
+            document.getElementById('adminProductsSection').style.display = section === 'products' ? 'block' : 'none';
+            document.getElementById('adminPagesSection').style.display = section === 'pages' ? 'block' : 'none';
+            
+            // Update button styles
+            document.querySelectorAll('.admin-section-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'bg-purple-600');
+                btn.classList.add('bg-gray-600');
+            });
+            
+            if (section === 'products') {
+                document.getElementById('adminProductsBtn').classList.remove('bg-gray-600');
+                document.getElementById('adminProductsBtn').classList.add('bg-blue-600');
+            } else if (section === 'pages') {
+                document.getElementById('adminPagesBtn').classList.remove('bg-gray-600');
+                document.getElementById('adminPagesBtn').classList.add('bg-purple-600');
+            }
+        }
+
+        // Edit page function
+        function editPage(page) {
+            showNotification(`กำลังเปิดหน้าแก้ไข${page === 'home' ? 'หน้าแรก' : page === 'about' ? 'เกี่ยวกับเรา' : 'ติดต่อเรา'}... 📝`);
+            
+            // Close admin modal and show the page
+            document.getElementById('adminModal').classList.add('hidden');
+            showPage(page);
+        }
+
+        // Add product to Firestore
+        async function addProduct() {
+            const name = document.getElementById('productName').value;
+            const price = parseInt(document.getElementById('productPrice').value);
+            const category = document.getElementById('productCategory').value;
+            const image = document.getElementById('productImage').value;
+            const affiliateLink = document.getElementById('productAffiliate').value;
+            const description = document.getElementById('productDescription').value;
+
+            if (name && price && category && image && description) {
+                try {
+                    // Show loading
+                    const addBtn = document.getElementById('addProductBtn');
+                    const originalText = addBtn.textContent;
+                    addBtn.textContent = 'กำลังเพิ่ม...';
+                    addBtn.disabled = true;
+
+                    const newProduct = {
+                        name,
+                        price,
+                        category,
+                        image,
+                        description,
+                        affiliateLink: affiliateLink || null,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    // Add to Firestore
+                    const docRef = await db.collection('products').add(newProduct);
+                    console.log('Product added with ID:', docRef.id);
+
+                    // Add to local array with generated ID
+                    allProducts.unshift({
+                        id: docRef.id,
+                        ...newProduct,
+                        createdAt: new Date() // For local display
+                    });
+                    
+                    // Update filtered products if showing all or same category
+                    if (currentCategory === 'all' || currentCategory === category) {
+                        filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+                        displayProducts(filteredProducts);
+                    }
+                    
+                    // Update home page products
+                    loadHomePageProducts();
+                    
+                    // Clear form
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productCategory').value = '';
+                    document.getElementById('productImage').value = '';
+                    document.getElementById('productAffiliate').value = '';
+                    document.getElementById('productDescription').value = '';
+
+                    // Reset button
+                    addBtn.textContent = originalText;
+                    addBtn.disabled = false;
+
+                    showNotification('เพิ่มสินค้าสำเร็จ! ✅');
+
+                } catch (error) {
+                    console.error('Error adding product:', error);
+                    showNotification('เกิดข้อผิดพลาดในการเพิ่มสินค้า ❌', 'error');
+                    
+                    // Reset button
+                    const addBtn = document.getElementById('addProductBtn');
+                    addBtn.textContent = 'เพิ่มสินค้า';
+                    addBtn.disabled = false;
+                }
+            } else {
+                showNotification('กรุณากรอกข้อมูลให้ครบถ้วน (ลิงค์ Affiliate ไม่บังคับ) ⚠️', 'error');
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPassword').value = '';
+            showNotification('ออกจากระบบแล้ว 👋');
+        }
+
+        // Show Flash Sale
+        function showFlashSale(type) {
+            showPage('flashsale');
+            
+            const titles = {
+                'main': '🔥 Flash Sale หลัก',
+                'today': '📅 Flash Sale วันนี้',
+                'weekend': '🎯 Flash Sale สุดสัปดาห์',
+                'mega': '💥 Mega Flash Sale'
+            };
+            
+            document.getElementById('flashSaleTitle').textContent = titles[type];
+            
+            // Show flash sale products with discount
+            const flashSaleProducts = allProducts.map(product => ({
+                ...product,
+                originalPrice: product.price,
+                price: Math.floor(product.price * 0.7), // 30% discount
+                discount: 30
+            }));
+            
+            displayFlashSaleProducts(flashSaleProducts);
+            startCountdown();
+        }
+
+        // Show Promotion
+        function showPromotion(category) {
+            showPage('promotion');
+            
+            const titles = {
+                'mobile': '📱 โปรโมชั่นมือถือ',
+                'computer': '💻 โปรโมชั่นคอมพิวเตอร์',
+                'fashion': '👗 โปรโมชั่นแฟชั่น',
+                'home': '🏠 โปรโมชั่นบ้านและสวน',
+                'game': '🎮 โปรโมชั่นเกม',
+                'health': '💊 โปรโมชั่นสุขภาพ'
+            };
+            
+            document.getElementById('promotionTitle').textContent = titles[category];
+            
+            // Filter products by category and add promotion
+            const promotionProducts = allProducts
+                .filter(product => product.category === category)
+                .map(product => ({
+                    ...product,
+                    originalPrice: product.price,
+                    price: Math.floor(product.price * 0.8), // 20% discount
+                    discount: 20,
+                    freeGift: true
+                }));
+            
+            displayPromotionProducts(promotionProducts);
+        }
+
+        // Display Flash Sale Products
+        function displayFlashSaleProducts(products) {
+            const container = document.getElementById('flashSaleProducts');
+            
+            container.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in relative">
+                    <div class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        -${product.discount}%
+                    </div>
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <span class="text-xl font-bold text-red-600">฿${product.price.toLocaleString()}</span>
+                                <span class="text-sm text-gray-500 line-through ml-2">฿${product.originalPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                                ⚡ เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Display Promotion Products
+        function displayPromotionProducts(products) {
+            const container = document.getElementById('promotionProducts');
+            
+            container.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition fade-in relative">
+                    <div class="absolute top-2 left-2 bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        -${product.discount}%
+                    </div>
+                    ${product.freeGift ? `
+                        <div class="absolute top-2 right-2 bg-pink-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                            🎁 ฟรีของแถม
+                        </div>
+                    ` : ''}
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <span class="text-xl font-bold text-purple-600">฿${product.price.toLocaleString()}</span>
+                                <span class="text-sm text-gray-500 line-through ml-2">฿${product.originalPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="addToCart('${product.id}')" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                                🎁 เพิ่มลงตะกร้า
+                            </button>
+                            ${product.affiliateLink ? `
+                                <a href="${product.affiliateLink}" target="_blank" class="flex-1 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition text-center">
+                                    🛍️ ซื้อเลย
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Start countdown timer
+        function startCountdown() {
+            let hours = 23;
+            let minutes = 59;
+            let seconds = 45;
+            
+            const countdownElement = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                seconds--;
+                
+                if (seconds < 0) {
+                    seconds = 59;
+                    minutes--;
+                }
+                
+                if (minutes < 0) {
+                    minutes = 59;
+                    hours--;
+                }
+                
+                if (hours < 0) {
+                    clearInterval(timer);
+                    countdownElement.textContent = "00:00:00";
+                    return;
+                }
+                
+                const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                countdownElement.textContent = formattedTime;
+            }, 1000);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium ${
+                type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            } fade-in`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+
+            // Cart modal
+            document.getElementById('cartBtn').addEventListener('click', showCartModal);
+            document.getElementById('closeCartModal').addEventListener('click', () => {
+                document.getElementById('cartModal').classList.add('hidden');
+            });
+
+            // Admin modal
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.remove('hidden');
+            });
+            document.getElementById('closeAdminModal').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.add('hidden');
+            });
+
+            // Admin functions
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('addProductBtn').addEventListener('click', addProduct);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            // Contact form
+            document.querySelector('#contactPage form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                showNotification('ส่งข้อความเรียบร้อยแล้ว! เราจะติดต่อกลับในเร็วๆ นี้ 📧');
+                this.reset();
+            });
+
+            // Close modals on outside click
+            document.getElementById('cartModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.add('hidden');
+                }
+            });
+            document.getElementById('adminModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96e88186a1f945b1',t:'MTc1NTA5MTE4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
