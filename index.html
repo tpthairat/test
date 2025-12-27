@@ -104,9 +104,9 @@
             GraduationCap: (p) => <IconBase {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>,
             FileText: (p) => <IconBase {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></IconBase>,
             BarChart: (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
-            // *** Added Chart icon here ***
             Chart: (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
             BookOpen: (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>,
+            Link: (p) => <IconBase {...p}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></IconBase>,
 
             // Quiz & Results
             Clock: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>,
@@ -132,27 +132,6 @@
 
         const INITIAL_QUESTIONS = [
             { category: "ทั่วไป", question: "1+1=?", options: ["1","2","3","4"], correctAnswer: 1, explanation: "ง่ายๆ" }
-        ];
-
-        const SUMMARIES = [
-            {
-                id: 1,
-                title: "สรุปสูตรคณิตศาสตร์ (อนุกรม)",
-                category: "ภาค ก",
-                content: `<h4 class="font-bold text-lg mb-2 text-slate-800">1. อนุกรมเพิ่มคงที่</h4><p class="mb-4 text-slate-600">คือการบวกด้วยเลขเดิมซ้ำๆ เช่น 2, 4, 6, 8 (บวกทีละ 2)</p><h4 class="font-bold text-lg mb-2 text-slate-800">2. อนุกรมเพิ่มแบบมีลำดับ</h4><p class="mb-4 text-slate-600">การบวกที่ตัวบวกเพิ่มขึ้นเรื่อยๆ เช่น 2, 5, 10, 17 (+3, +5, +7)</p>`
-            },
-            {
-                id: 2,
-                title: "คำราชาศัพท์ที่ควรรู้",
-                category: "ภาค ก",
-                content: `<ul class="list-disc pl-5 space-y-2 text-slate-600"><li><b>พระอัยกา</b> = ปู่, ตา</li><li><b>พระอัยกี</b> = ย่า, ยาย</li><li><b>พระชนก</b> = พ่อ</li></ul>`
-            },
-            {
-                id: 3,
-                title: "สรุปงานสารบรรณ (ฉบับย่อ)",
-                category: "ภาค ข",
-                content: `<div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><b class="text-yellow-800">หนังสือราชการมี 6 ชนิด</b><ol class="list-decimal pl-5 mt-2 space-y-1 text-slate-700"><li>หนังสือภายนอก</li><li>หนังสือภายใน</li><li>หนังสือประทับตรา</li><li>หนังสือสั่งการ</li><li>หนังสือประชาสัมพันธ์</li><li>หนังสือที่เจ้าหน้าที่ทำขึ้นหรือรับไว้</li></ol></div>`
-            }
         ];
 
         const parseCSV = (text) => {
@@ -188,20 +167,36 @@
         const AdminScreen = ({ goBack, user }) => {
             const [view, setView] = useState('files');
             const [files, setFiles] = useState([]);
+            const [summaries, setSummaries] = useState([]);
             const [questions, setQuestions] = useState([]);
             const [selectedFile, setSelectedFile] = useState(null);
             const [loading, setLoading] = useState(false);
+            const [adminTab, setAdminTab] = useState('files'); // 'files' or 'summaries'
             
+            // Import Files State
             const [fileName, setFileName] = useState("");
             const [importPart, setImportPart] = useState("A");
             const [csvData, setCsvData] = useState([]);
             const fileInputRef = useRef(null);
 
+            // Add Summary State
+            const [summaryTitle, setSummaryTitle] = useState("");
+            const [summaryLink, setSummaryLink] = useState("");
+            const [summaryPart, setSummaryPart] = useState("A");
+
             useEffect(() => {
                 if (!window.FB) return;
                 const { db, collection, query, orderBy, onSnapshot, appId } = window.FB;
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc'));
-                return onSnapshot(q, (snap) => setFiles(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                
+                // Fetch Exam Files
+                const qFiles = query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc'));
+                const unsubFiles = onSnapshot(qFiles, (snap) => setFiles(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+
+                // Fetch Summaries
+                const qSums = query(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), orderBy('createdAt', 'desc'));
+                const unsubSums = onSnapshot(qSums, (snap) => setSummaries(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+
+                return () => { unsubFiles(); unsubSums(); };
             }, []);
 
             const fetchQuestions = async (file) => {
@@ -244,6 +239,23 @@
                 setLoading(false);
             };
 
+            const saveSummary = async () => {
+                if(!summaryTitle || !summaryLink) return alert("กรุณากรอกชื่อหัวข้อและลิงก์");
+                setLoading(true);
+                const { db, collection, addDoc, appId } = window.FB;
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), {
+                        title: summaryTitle,
+                        link: summaryLink,
+                        category: summaryPart === 'A' ? 'ภาค ก' : 'ภาค ข',
+                        createdAt: Date.now()
+                    });
+                    alert("บันทึกสรุปเนื้อหาสำเร็จ");
+                    setSummaryTitle(""); setSummaryLink("");
+                } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
+                setLoading(false);
+            };
+
             const deleteFile = async (file) => {
                 if(!confirm("ลบไฟล์และข้อสอบทั้งหมด?")) return;
                 const { db, doc, deleteDoc, collection, query, where, getDocs, writeBatch, appId } = window.FB;
@@ -253,6 +265,12 @@
                 const batch = writeBatch(db);
                 snap.forEach(s => batch.delete(s.ref));
                 await batch.commit();
+            };
+
+            const deleteSummary = async (id) => {
+                if(!confirm("ลบสรุปเนื้อหานี้?")) return;
+                const { db, doc, deleteDoc, appId } = window.FB;
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'summaries', id));
             };
 
             const deleteQuestion = async (qid) => {
@@ -291,52 +309,110 @@
             return (
                 <div className="p-4 max-w-4xl mx-auto pb-20">
                     <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow">
-                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings/> ระบบจัดการไฟล์</h2>
+                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings/> ระบบจัดการ</h2>
                         <button onClick={goBack} className="text-sm bg-slate-100 px-4 py-2 rounded-lg hover:bg-slate-200">กลับหน้าหลัก</button>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow mb-6">
-                        <h3 className="font-bold mb-4 flex gap-2"><Icons.Upload/> นำเข้าไฟล์ใหม่ (CSV)</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <input value={fileName} onChange={e=>setFileName(e.target.value)} className="border p-2 rounded w-full" placeholder="ชื่อชุดข้อสอบ (เช่น ก.พ. 66)" />
-                            <div className="flex gap-2">
-                                <button onClick={()=>setImportPart('A')} className={`flex-1 p-2 rounded border ${importPart==='A'?'bg-blue-100 border-blue-500 text-blue-700':'bg-white'}`}>ภาค ก</button>
-                                <button onClick={()=>setImportPart('B')} className={`flex-1 p-2 rounded border ${importPart==='B'?'bg-purple-100 border-purple-500 text-purple-700':'bg-white'}`}>ภาค ข</button>
-                            </div>
-                        </div>
-                        <input type="file" accept=".csv" onChange={handleFileSelect} ref={fileInputRef} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
-                        
-                        {csvData.length > 0 && (
-                            <div className="mt-4 flex justify-between items-center bg-green-50 p-3 rounded text-green-800">
-                                <span>พร้อมบันทึก {csvData.length} ข้อ</span>
-                                <button onClick={saveFile} disabled={loading} className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 disabled:opacity-50">{loading ? 'กำลังบันทึก...' : 'ยืนยัน'}</button>
-                            </div>
-                        )}
+                    {/* Admin Tabs */}
+                    <div className="flex gap-4 mb-6">
+                        <button onClick={() => setAdminTab('files')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${adminTab === 'files' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
+                            จัดการข้อสอบ
+                        </button>
+                        <button onClick={() => setAdminTab('summaries')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${adminTab === 'summaries' ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
+                            จัดการสรุปเนื้อหา
+                        </button>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow overflow-hidden">
-                        <div className="p-4 bg-slate-50 border-b font-bold text-slate-600">รายการไฟล์ที่มี ({files.length})</div>
-                        {files.length === 0 ? <div className="p-10 text-center text-slate-400">ยังไม่มีไฟล์</div> : (
-                            <table className="w-full text-left">
-                                <thead className="text-xs text-slate-500 bg-slate-50 border-b">
-                                    <tr><th className="p-4">ชื่อไฟล์</th><th className="p-4">หมวด</th><th className="p-4">จำนวน</th><th className="p-4 text-right">จัดการ</th></tr>
-                                </thead>
-                                <tbody>
-                                    {files.map(f => (
-                                        <tr key={f.id} className="border-b hover:bg-slate-50">
-                                            <td className="p-4 font-bold">{f.fileName}</td>
-                                            <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${f.part==='A'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>ภาค {f.part}</span></td>
-                                            <td className="p-4 text-sm">{f.count} ข้อ</td>
-                                            <td className="p-4 text-right space-x-2">
-                                                <button onClick={()=>fetchQuestions(f)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-100"><Icons.Edit/></button>
-                                                <button onClick={()=>deleteFile(f)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-100"><Icons.Trash/></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    {adminTab === 'files' ? (
+                        <div>
+                            <div className="bg-white p-6 rounded-xl shadow mb-6">
+                                <h3 className="font-bold mb-4 flex gap-2"><Icons.Upload/> นำเข้าไฟล์ใหม่ (CSV)</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <input value={fileName} onChange={e=>setFileName(e.target.value)} className="border p-2 rounded w-full" placeholder="ชื่อชุดข้อสอบ (เช่น ก.พ. 66)" />
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>setImportPart('A')} className={`flex-1 p-2 rounded border ${importPart==='A'?'bg-blue-100 border-blue-500 text-blue-700':'bg-white'}`}>ภาค ก</button>
+                                        <button onClick={()=>setImportPart('B')} className={`flex-1 p-2 rounded border ${importPart==='B'?'bg-purple-100 border-purple-500 text-purple-700':'bg-white'}`}>ภาค ข</button>
+                                    </div>
+                                </div>
+                                <input type="file" accept=".csv" onChange={handleFileSelect} ref={fileInputRef} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+                                
+                                {csvData.length > 0 && (
+                                    <div className="mt-4 flex justify-between items-center bg-green-50 p-3 rounded text-green-800">
+                                        <span>พร้อมบันทึก {csvData.length} ข้อ</span>
+                                        <button onClick={saveFile} disabled={loading} className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 disabled:opacity-50">{loading ? 'กำลังบันทึก...' : 'ยืนยัน'}</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow overflow-hidden">
+                                <div className="p-4 bg-slate-50 border-b font-bold text-slate-600">รายการไฟล์ที่มี ({files.length})</div>
+                                {files.length === 0 ? <div className="p-10 text-center text-slate-400">ยังไม่มีไฟล์</div> : (
+                                    <table className="w-full text-left">
+                                        <thead className="text-xs text-slate-500 bg-slate-50 border-b">
+                                            <tr><th className="p-4">ชื่อไฟล์</th><th className="p-4">หมวด</th><th className="p-4">จำนวน</th><th className="p-4 text-right">จัดการ</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {files.map(f => (
+                                                <tr key={f.id} className="border-b hover:bg-slate-50">
+                                                    <td className="p-4 font-bold">{f.fileName}</td>
+                                                    <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${f.part==='A'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>ภาค {f.part}</span></td>
+                                                    <td className="p-4 text-sm">{f.count} ข้อ</td>
+                                                    <td className="p-4 text-right space-x-2">
+                                                        <button onClick={()=>fetchQuestions(f)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-100"><Icons.Edit/></button>
+                                                        <button onClick={()=>deleteFile(f)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-100"><Icons.Trash/></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            {/* Summary Management */}
+                            <div className="bg-white p-6 rounded-xl shadow mb-6">
+                                <h3 className="font-bold mb-4 flex gap-2 text-orange-600"><Icons.Link/> เพิ่มสรุปเนื้อหาใหม่</h3>
+                                <div className="space-y-4">
+                                    <input value={summaryTitle} onChange={e=>setSummaryTitle(e.target.value)} className="border p-3 rounded-xl w-full" placeholder="ชื่อหัวข้อสรุป (เช่น สรุปสูตรคณิตศาสตร์)" />
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <input value={summaryLink} onChange={e=>setSummaryLink(e.target.value)} className="border p-3 rounded-xl w-full" placeholder="วางลิงก์ไฟล์ (URL)" />
+                                            <p className="text-xs text-slate-400 mt-1">*รองรับลิงก์ Google Drive, PDF หรือหน้าเว็บที่อนุญาตให้ฝัง (Embed)</p>
+                                        </div>
+                                        <div className="w-1/3 flex gap-2">
+                                            <button onClick={()=>setSummaryPart('A')} className={`flex-1 rounded-xl border font-bold ${summaryPart==='A'?'bg-blue-100 border-blue-500 text-blue-700':'bg-white text-slate-500'}`}>ภาค ก</button>
+                                            <button onClick={()=>setSummaryPart('B')} className={`flex-1 rounded-xl border font-bold ${summaryPart==='B'?'bg-purple-100 border-purple-500 text-purple-700':'bg-white text-slate-500'}`}>ภาค ข</button>
+                                        </div>
+                                    </div>
+                                    <button onClick={saveSummary} disabled={loading} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50">{loading ? 'กำลังบันทึก...' : 'เพิ่มรายการ'}</button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow overflow-hidden">
+                                <div className="p-4 bg-slate-50 border-b font-bold text-slate-600">รายการสรุปเนื้อหา ({summaries.length})</div>
+                                {summaries.length === 0 ? <div className="p-10 text-center text-slate-400">ยังไม่มีข้อมูล</div> : (
+                                    <table className="w-full text-left">
+                                        <thead className="text-xs text-slate-500 bg-slate-50 border-b">
+                                            <tr><th className="p-4">หัวข้อ</th><th className="p-4">หมวด</th><th className="p-4">วันที่สร้าง</th><th className="p-4 text-right">จัดการ</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {summaries.map(s => (
+                                                <tr key={s.id} className="border-b hover:bg-slate-50">
+                                                    <td className="p-4 font-bold text-slate-700 max-w-xs truncate">{s.title}</td>
+                                                    <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${s.category==='ภาค ก'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>{s.category}</span></td>
+                                                    <td className="p-4 text-sm text-slate-500">{new Date(s.createdAt).toLocaleDateString('th-TH')}</td>
+                                                    <td className="p-4 text-right">
+                                                        <button onClick={()=>deleteSummary(s.id)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-100"><Icons.Trash size={16}/></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -388,6 +464,7 @@
             const [page, setPage] = useState('home'); 
             const [user, setUser] = useState(null);
             const [files, setFiles] = useState([]);
+            const [summaries, setSummaries] = useState([]);
             const [selectedPart, setSelectedPart] = useState(null);
             const [quizQuestions, setQuizQuestions] = useState([]);
             const [score, setScore] = useState(0);
@@ -417,9 +494,18 @@
             useEffect(() => {
                 if(!user || !ready) return;
                 const { db, collection, onSnapshot, appId, orderBy, query } = window.FB;
+                
+                // Fetch Files
                 onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc')), (snap) => {
                     setFiles(snap.docs.map(d => ({id: d.id, ...d.data()})));
                 });
+                
+                // Fetch Summaries
+                onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), orderBy('createdAt', 'desc')), (snap) => {
+                    setSummaries(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                });
+
+                // Fetch Results
                 onSnapshot(query(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), orderBy('timestamp', 'desc')), (snap) => {
                     setResults(snap.docs.map(d => d.data()));
                 });
@@ -533,7 +619,7 @@
                                 <h2 className="text-2xl font-bold">สรุปเนื้อหา</h2>
                             </div>
                             <div className="space-y-4">
-                                {SUMMARIES.map(item => (
+                                {summaries.map(item => (
                                     <div key={item.id} className="bg-white rounded-xl shadow overflow-hidden border border-slate-100">
                                         <button onClick={()=>setOpenSummaryId(openSummaryId === item.id ? null : item.id)} className="w-full p-5 flex items-center justify-between hover:bg-slate-50 text-left">
                                             <div className="flex items-center gap-4">
@@ -546,12 +632,14 @@
                                             <div className={`transition-transform ${openSummaryId===item.id?'rotate-180':''}`}><Icons.ChevronDown/></div>
                                         </button>
                                         {openSummaryId === item.id && (
-                                            <div className="p-5 pt-0 border-t border-slate-50 text-slate-600 text-sm leading-relaxed">
-                                                <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                            <div className="p-5 pt-0 border-t border-slate-50">
+                                                <iframe src={item.link.replace('/view', '/preview')} className="w-full h-96 rounded-lg border border-slate-200" title={item.title}></iframe>
+                                                <div className="text-right mt-2"><a href={item.link} target="_blank" className="text-xs text-blue-500 font-bold hover:underline flex items-center justify-end gap-1">เปิดในหน้าต่างใหม่ <Icons.ArrowRight size={12}/></a></div>
                                             </div>
                                         )}
                                     </div>
                                 ))}
+                                {summaries.length === 0 && <div className="text-center text-slate-400 p-10">ไม่มีสรุปเนื้อหา</div>}
                             </div>
                         </div>
                     )}
