@@ -15,8 +15,6 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-    <!-- Chart.js for Analysis (Optional but good for stats) - Using simple CSS/SVG instead to keep single file clean -->
-
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -830,7 +828,7 @@
                             setErrorMsg("ไม่พบข้อมูล หรือรูปแบบไฟล์ไม่ถูกต้อง");
                             setPreviewData([]);
                         } else {
-                            const parsedWithPart = parsed.map(item => ({ ...item, part: importPart }));
+                            const parsedWithPart = parsed.map(item => Object.assign({}, item, { part: importPart }));
                             setPreviewData(parsedWithPart);
                             setErrorMsg("");
                         }
@@ -1045,29 +1043,36 @@
 
         // --- Main App ---
         const App = () => {
+            const [isReady, setIsReady] = useState(false);
             const [gameState, setGameState] = useState('welcome'); 
             const [score, setScore] = useState(0);
             
-            // Files State
             const [files, setFiles] = useState([]);
+            const [activeQuestions, setActiveQuestions] = useState([]); 
             
-            // Question State
-            const [activeQuestions, setActiveQuestions] = useState([]); // Questions currently being used (Quiz)
-            
-            // Selection State
             const [selectedPart, setSelectedPart] = useState(null); 
-            const [selectedFile, setSelectedFile] = useState(null); // Which file is selected for quiz
+            const [selectedFile, setSelectedFile] = useState(null); 
 
-            // Analysis Stats
             const [userResultStats, setUserResultStats] = useState({ totalExams: 0, avgScore: 0, passRate: 0, history: [] });
 
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
             const [authError, setAuthError] = useState(null);
             
-            const { auth, db, appId, signInAnonymously, onAuthStateChanged, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, getDocs, writeBatch, orderBy, signInWithCustomToken, serverTimestamp } = window.FB;
+            // Initial Check for Firebase
+            useEffect(() => {
+                if (window.FB) {
+                    setIsReady(true);
+                } else {
+                    window.addEventListener('firebase-ready', () => setIsReady(true));
+                }
+            }, []);
 
             useEffect(() => {
+                if (!isReady) return;
+                
+                const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.FB;
+
                 const initAuth = async () => {
                     try {
                         if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
@@ -1080,19 +1085,20 @@
                         setIsLoading(false);
                     }
                 };
-                if (window.FB) initAuth();
-                else window.addEventListener('firebase-ready', initAuth);
+                initAuth();
 
                 const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
                     setUser(currentUser);
                     if (currentUser) setAuthError(null);
                 });
                 return () => unsubscribe();
-            }, []);
+            }, [isReady]);
 
-            // Fetch Files Metadata (Public)
+            // Fetch Files
             useEffect(() => {
-                if (!user) return;
+                if (!user || !isReady) return;
+                const { db, collection, query, onSnapshot, orderBy, appId } = window.FB;
+                
                 const filesPath = collection(db, 'artifacts', appId, 'public', 'data', 'files');
                 const filesQuery = query(filesPath, orderBy('createdAt', 'desc'));
                 
@@ -1101,17 +1107,17 @@
                     setFiles(loadedFiles);
                     setIsLoading(false);
                 }, (error) => {
-                    // console.error("Error fetching files:", error);
                     setAuthError("เชื่อมต่อฐานข้อมูลไม่ได้ (Files)");
                     setIsLoading(false);
                 });
                 return () => unsubscribe();
-            }, [user]);
+            }, [user, isReady]);
 
-            // Fetch User Results for Analysis
+            // Fetch User Results
             useEffect(() => {
-                if (!user) return;
-                // Private data: user's results
+                if (!user || !isReady) return;
+                const { db, collection, query, onSnapshot, orderBy, appId } = window.FB;
+
                 const resultsPath = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
                 const resultsQuery = query(resultsPath, orderBy('timestamp', 'desc'));
 
@@ -1129,7 +1135,7 @@
                     }
                 });
                 return () => unsubscribe();
-            }, [user]);
+            }, [user, isReady]);
 
             // Handlers
             const handleSelectPart = (part) => {
@@ -1138,8 +1144,9 @@
             };
 
             const handleSelectFileForQuiz = async (file) => {
+                if (!isReady) return;
+                const { db, collection, query, where, getDocs, appId } = window.FB;
                 setSelectedFile(file);
-                // Fetch questions for this file
                 setIsLoading(true);
                 try {
                     const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
@@ -1159,9 +1166,8 @@
             const handleFinishQuiz = async (finalScore) => {
                 setScore(finalScore);
                 setGameState('result');
-                
-                // Save Result to Firestore
-                if (user && selectedFile) {
+                if (user && selectedFile && isReady) {
+                    const { db, collection, addDoc, appId } = window.FB;
                     try {
                         const resultsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
                         await addDoc(resultsCol, {
@@ -1181,9 +1187,9 @@
 
             // Admin Functions
             const addFileAndQuestions = async (fileName, part, newQuestions) => {
-                if (!user) return;
+                if (!user || !isReady) return;
+                const { db, collection, addDoc, writeBatch, doc, appId } = window.FB;
                 try {
-                    // 1. Create File Doc
                     const filesCol = collection(db, 'artifacts', appId, 'public', 'data', 'files');
                     const fileRef = await addDoc(filesCol, {
                         fileName,
@@ -1192,13 +1198,12 @@
                         createdAt: Date.now()
                     });
 
-                    // 2. Add Questions with fileId
                     const questionsCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                     const batch = writeBatch(db);
                     
                     newQuestions.forEach((q) => {
-                        const newDocRef = doc(questionsCol); // Auto-ID
-                        batch.set(newDocRef, { ...q, fileId: fileRef.id });
+                        const newDocRef = doc(questionsCol);
+                        batch.set(newDocRef, Object.assign({}, q, { fileId: fileRef.id }));
                     });
 
                     await batch.commit();
@@ -1209,12 +1214,11 @@
             };
 
             const deleteFileAndQuestions = async (fileId) => {
-                if (!user) return;
+                if (!user || !isReady) return;
+                const { db, doc, deleteDoc, collection, query, where, getDocs, writeBatch, appId } = window.FB;
                 try {
-                    // 1. Delete File Doc
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'files', fileId));
                     
-                    // 2. Delete All Associated Questions (Query then Batch Delete)
                     const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                     const qQuery = query(qCol, where('fileId', '==', fileId));
                     const snapshot = await getDocs(qQuery);
@@ -1230,7 +1234,8 @@
             };
             
             const getQuestionsByFile = async (fileId) => {
-                 if (!user) return [];
+                 if (!user || !isReady) return [];
+                 const { db, collection, query, where, getDocs, appId } = window.FB;
                  const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                  const qQuery = query(qCol, where('fileId', '==', fileId));
                  const snapshot = await getDocs(qQuery);
@@ -1238,7 +1243,8 @@
             };
 
             const updateQuestion = async (id, newData) => {
-                if (!user) return;
+                if (!user || !isReady) return;
+                const { db, doc, updateDoc, appId } = window.FB;
                 try {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id), newData);
                 } catch (e) {
@@ -1247,7 +1253,8 @@
             };
 
             const deleteQuestion = async (id) => {
-                if (!user) return;
+                if (!user || !isReady) return;
+                const { db, doc, deleteDoc, appId } = window.FB;
                  try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
                 } catch (e) {
@@ -1265,6 +1272,8 @@
             };
             
             const getPartName = (part) => part === 'A' ? "ภาค ก (ความรู้ทั่วไป)" : "ภาค ข (ความรู้เฉพาะตำแหน่ง)";
+
+            if (!isReady) return <div className="flex items-center justify-center min-h-screen text-slate-500"><Icons.Loader2 className="animate-spin mr-2" /> กำลังโหลดระบบ...</div>;
 
             return (
                 <div>
