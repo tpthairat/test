@@ -83,39 +83,78 @@
         const IconBase = ({ children, size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
         );
+        
         const Icons = {
+            // General
             Book: (p) => <IconBase {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></IconBase>,
             Settings: (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>,
+            Home: (p) => <IconBase {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconBase>,
+            Info: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>,
+            Loader: (p) => <IconBase {...p} className={`animate-spin ${p.className || ''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></IconBase>,
+            
+            // Navigation
             ArrowLeft: (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconBase>,
             ArrowRight: (p) => <IconBase {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconBase>,
-            Trash: (p) => <IconBase {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconBase>,
-            Edit: (p) => <IconBase {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></IconBase>,
-            Plus: (p) => <IconBase {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>,
-            File: (p) => <IconBase {...p}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></IconBase>,
+            ChevronRight: (p) => <IconBase {...p}><path d="m9 18 6-6-6-6"/></IconBase>,
+            ChevronDown: (p) => <IconBase {...p}><path d="m6 9 6 6 6-6"/></IconBase>,
+
+            // Subjects & Categories
             Check: (p) => <IconBase {...p}><polyline points="20 6 9 17 4 12"/></IconBase>,
             Briefcase: (p) => <IconBase {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></IconBase>,
-            Chart: (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
-            Refresh: (p) => <IconBase {...p}><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></IconBase>,
-            Loader2: (p) => <IconBase {...p} className={`animate-spin ${p.className || ''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></IconBase>,
-            UploadCloud: (p) => <IconBase {...p}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></IconBase>,
-            Save: (p) => <IconBase {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>,
-            AlertCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>,
-            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>,
+            GraduationCap: (p) => <IconBase {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>,
             FileText: (p) => <IconBase {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></IconBase>,
+            BarChart: (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
+            // *** Added Chart icon here ***
+            Chart: (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
+            BookOpen: (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>,
+
+            // Quiz & Results
+            Clock: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>,
+            CheckCircle: (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>,
+            XCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>,
+            Lightbulb: (p) => <IconBase {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-3.2-2.8-5-6-5.6-2.6-.5-5.3 1.1-6 3.6-.5 1.7 0 3.5 1.3 4.8.8.8 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></IconBase>,
             Trophy: (p) => <IconBase {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2h-6c-2 0-3 1-3 3v4c0 3 2 5 5 6h.5c3 0 5-2 5-6V5c0-2-1-3-3-3z"/></IconBase>,
             Frown: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></IconBase>,
             RotateCcw: (p) => <IconBase {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>,
-            ChevronDown: (p) => <IconBase {...p}><path d="m6 9 6 6 6-6"/></IconBase>,
-            BarChart: (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
             TrendingUp: (p) => <IconBase {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></IconBase>,
-            PieChart: (p) => <IconBase {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></IconBase>
+            PieChart: (p) => <IconBase {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></IconBase>,
+
+            // Admin Actions
+            Trash: (p) => <IconBase {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconBase>,
+            Edit: (p) => <IconBase {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></IconBase>,
+            Upload: (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></IconBase>,
+            UploadCloud: (p) => <IconBase {...p}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></IconBase>,
+            Save: (p) => <IconBase {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>,
+            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>,
+            Refresh: (p) => <IconBase {...p}><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></IconBase>,
+            AlertCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>
         };
 
         const INITIAL_QUESTIONS = [
             { category: "ทั่วไป", question: "1+1=?", options: ["1","2","3","4"], correctAnswer: 1, explanation: "ง่ายๆ" }
         ];
 
-        // --- Helper: CSV Parser ---
+        const SUMMARIES = [
+            {
+                id: 1,
+                title: "สรุปสูตรคณิตศาสตร์ (อนุกรม)",
+                category: "ภาค ก",
+                content: `<h4 class="font-bold text-lg mb-2 text-slate-800">1. อนุกรมเพิ่มคงที่</h4><p class="mb-4 text-slate-600">คือการบวกด้วยเลขเดิมซ้ำๆ เช่น 2, 4, 6, 8 (บวกทีละ 2)</p><h4 class="font-bold text-lg mb-2 text-slate-800">2. อนุกรมเพิ่มแบบมีลำดับ</h4><p class="mb-4 text-slate-600">การบวกที่ตัวบวกเพิ่มขึ้นเรื่อยๆ เช่น 2, 5, 10, 17 (+3, +5, +7)</p>`
+            },
+            {
+                id: 2,
+                title: "คำราชาศัพท์ที่ควรรู้",
+                category: "ภาค ก",
+                content: `<ul class="list-disc pl-5 space-y-2 text-slate-600"><li><b>พระอัยกา</b> = ปู่, ตา</li><li><b>พระอัยกี</b> = ย่า, ยาย</li><li><b>พระชนก</b> = พ่อ</li></ul>`
+            },
+            {
+                id: 3,
+                title: "สรุปงานสารบรรณ (ฉบับย่อ)",
+                category: "ภาค ข",
+                content: `<div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><b class="text-yellow-800">หนังสือราชการมี 6 ชนิด</b><ol class="list-decimal pl-5 mt-2 space-y-1 text-slate-700"><li>หนังสือภายนอก</li><li>หนังสือภายใน</li><li>หนังสือประทับตรา</li><li>หนังสือสั่งการ</li><li>หนังสือประชาสัมพันธ์</li><li>หนังสือที่เจ้าหน้าที่ทำขึ้นหรือรับไว้</li></ol></div>`
+            }
+        ];
+
         const parseCSV = (text) => {
             const lines = text.split('\n');
             const result = [];
@@ -144,7 +183,7 @@
             return result;
         };
 
-        // --- Components ---
+        // --- COMPONENTS ---
 
         const AdminScreen = ({ goBack, user }) => {
             const [view, setView] = useState('files');
@@ -162,10 +201,7 @@
                 if (!window.FB) return;
                 const { db, collection, query, orderBy, onSnapshot, appId } = window.FB;
                 const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc'));
-                const unsub = onSnapshot(q, (snap) => {
-                    setFiles(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                });
-                return () => unsub();
+                return onSnapshot(q, (snap) => setFiles(snap.docs.map(d => ({id: d.id, ...d.data()}))));
             }, []);
 
             const fetchQuestions = async (file) => {
@@ -184,10 +220,7 @@
                 if(!file) return;
                 setFileName(file.name.replace('.csv',''));
                 const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const parsed = parseCSV(evt.target.result);
-                    setCsvData(parsed);
-                };
+                reader.onload = (evt) => setCsvData(parseCSV(evt.target.result));
                 reader.readAsText(file);
             };
 
@@ -236,7 +269,7 @@
                             <button onClick={() => setView('files')} className="p-2 hover:bg-slate-100 rounded-full"><Icons.ArrowLeft/></button>
                             <h2 className="text-xl font-bold">แก้ไข: {selectedFile ? selectedFile.fileName : ''}</h2>
                         </div>
-                        {loading ? <div className="text-center p-10">กำลังโหลด...</div> : (
+                        {loading ? <div className="text-center p-10"><Icons.Loader/></div> : (
                             <div className="bg-white rounded-xl shadow overflow-hidden">
                                 {questions.map((q, i) => (
                                     <div key={q.id} className="p-4 border-b hover:bg-slate-50 flex justify-between items-start">
@@ -245,7 +278,7 @@
                                             {q.question}
                                             <div className="text-xs text-slate-400 mt-1">{q.category}</div>
                                         </div>
-                                        <button onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Icons.Trash size={18}/></button>
+                                        <button onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Icons.Trash/></button>
                                     </div>
                                 ))}
                                 {questions.length === 0 && <div className="p-8 text-center text-slate-400">ไม่มีข้อสอบในไฟล์นี้</div>}
@@ -258,12 +291,12 @@
             return (
                 <div className="p-4 max-w-4xl mx-auto pb-20">
                     <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow">
-                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings className="text-blue-600"/> ระบบจัดการไฟล์ข้อสอบ</h2>
+                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings/> ระบบจัดการไฟล์</h2>
                         <button onClick={goBack} className="text-sm bg-slate-100 px-4 py-2 rounded-lg hover:bg-slate-200">กลับหน้าหลัก</button>
                     </div>
 
                     <div className="bg-white p-6 rounded-xl shadow mb-6">
-                        <h3 className="font-bold mb-4 flex gap-2"><Icons.UploadCloud/> นำเข้าไฟล์ใหม่</h3>
+                        <h3 className="font-bold mb-4 flex gap-2"><Icons.Upload/> นำเข้าไฟล์ใหม่ (CSV)</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <input value={fileName} onChange={e=>setFileName(e.target.value)} className="border p-2 rounded w-full" placeholder="ชื่อชุดข้อสอบ (เช่น ก.พ. 66)" />
                             <div className="flex gap-2">
@@ -295,8 +328,8 @@
                                             <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${f.part==='A'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>ภาค {f.part}</span></td>
                                             <td className="p-4 text-sm">{f.count} ข้อ</td>
                                             <td className="p-4 text-right space-x-2">
-                                                <button onClick={()=>fetchQuestions(f)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-100"><Icons.Edit size={16}/></button>
-                                                <button onClick={()=>deleteFile(f)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-100"><Icons.Trash size={16}/></button>
+                                                <button onClick={()=>fetchQuestions(f)} className="text-blue-600 bg-blue-50 p-2 rounded hover:bg-blue-100"><Icons.Edit/></button>
+                                                <button onClick={()=>deleteFile(f)} className="text-red-600 bg-red-50 p-2 rounded hover:bg-red-100"><Icons.Trash/></button>
                                             </td>
                                         </tr>
                                     ))}
@@ -304,213 +337,6 @@
                             </table>
                         )}
                     </div>
-                </div>
-            );
-        };
-
-        const MainApp = () => {
-            const [page, setPage] = useState('home'); 
-            const [user, setUser] = useState(null);
-            const [files, setFiles] = useState([]);
-            const [selectedPart, setSelectedPart] = useState(null);
-            const [quizQuestions, setQuizQuestions] = useState([]);
-            const [score, setScore] = useState(0);
-            const [ready, setReady] = useState(false);
-            const [results, setResults] = useState([]);
-
-            useEffect(() => {
-                const checkFB = () => {
-                    if(window.FB) {
-                        setReady(true);
-                        const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.FB;
-                        const initAuth = async () => {
-                            try {
-                                if(window.__initial_auth_token) await signInWithCustomToken(auth, window.__initial_auth_token);
-                                else await signInAnonymously(auth);
-                            } catch(e) { console.error(e); }
-                        };
-                        initAuth();
-                        onAuthStateChanged(auth, setUser);
-                    } else setTimeout(checkFB, 500);
-                };
-                checkFB();
-            }, []);
-
-            // Fetch Files
-            useEffect(() => {
-                if(!user || !ready) return;
-                const { db, collection, onSnapshot, appId, orderBy, query } = window.FB;
-                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'files'), (snap) => {
-                    setFiles(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                });
-                
-                // Fetch Results
-                const qRes = query(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), orderBy('timestamp', 'desc'));
-                onSnapshot(qRes, (snap) => {
-                    setResults(snap.docs.map(d => d.data()));
-                });
-            }, [user, ready]);
-
-            const startQuiz = async (file) => {
-                const { db, collection, getDocs, query, where, appId } = window.FB;
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), where('fileId', '==', file.id));
-                const snap = await getDocs(q);
-                const qs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                if(qs.length === 0) return alert("ไม่พบข้อสอบ");
-                setQuizQuestions(qs);
-                setPage('quiz');
-            };
-
-            const finishQuiz = async (s) => {
-                setScore(s);
-                setPage('result');
-                if(user) {
-                    const { db, collection, addDoc, appId } = window.FB;
-                    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), {
-                        score: s, total: quizQuestions.length, timestamp: Date.now(), part: selectedPart
-                    });
-                }
-            };
-
-            if(!ready) return <div className="h-screen flex items-center justify-center">Loading...</div>;
-
-            const counts = { A: files.filter(f=>f.part==='A').length, B: files.filter(f=>f.part==='B').length };
-
-            return (
-                <div className="min-h-screen">
-                    <div className="fixed inset-0 -z-10 bg-slate-50"></div>
-                    
-                    {page === 'home' && (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-                            <button onClick={()=>setPage('admin')} className="absolute top-4 right-4 p-2 bg-white rounded-full shadow"><Icons.Settings/></button>
-                            <div className="mb-8 text-center">
-                                <div className="inline-block p-4 bg-blue-600 rounded-3xl shadow-lg mb-4 text-white"><Icons.Book size={40}/></div>
-                                <h1 className="text-4xl font-bold text-slate-800">คลังข้อสอบราชการ</h1>
-                                <p className="text-slate-500">ฝึกฝนเพื่ออนาคต</p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
-                                <button onClick={()=>{setSelectedPart('A'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left group border border-white hover:border-blue-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="bg-blue-100 text-blue-700 p-2 rounded-lg"><Icons.Check/></span>
-                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.A} ชุด</span>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-blue-600">ภาค ก</h2>
-                                    <p className="text-sm text-slate-500">ความรู้ความสามารถทั่วไป</p>
-                                </button>
-                                <button onClick={()=>{setSelectedPart('B'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left group border border-white hover:border-purple-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="bg-purple-100 text-purple-700 p-2 rounded-lg"><Icons.Briefcase/></span>
-                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.B} ชุด</span>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-purple-600">ภาค ข</h2>
-                                    <p className="text-sm text-slate-500">ความรู้เฉพาะตำแหน่ง</p>
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mt-4">
-                                <button onClick={()=>setPage('summary')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left group border border-white hover:border-orange-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="bg-orange-100 text-orange-700 p-2 rounded-lg"><Icons.FileText/></span>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-orange-600">สรุปเนื้อหา</h2>
-                                    <p className="text-sm text-slate-500">ทบทวนบทเรียน</p>
-                                </button>
-                                <button onClick={()=>setPage('analysis')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left group border border-white hover:border-green-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="bg-green-100 text-green-700 p-2 rounded-lg"><Icons.BarChart/></span>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-green-600">วิเคราะห์ผล</h2>
-                                    <p className="text-sm text-slate-500">ดูสถิติการสอบ</p>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'selection' && (
-                        <div className="p-4 pt-8 max-w-2xl mx-auto">
-                            <div className="flex items-center gap-4 mb-6">
-                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
-                                <h2 className="text-2xl font-bold">เลือกชุดข้อสอบ ภาค {selectedPart}</h2>
-                            </div>
-                            <div className="space-y-3">
-                                {files.filter(f=>f.part===selectedPart).map(f => (
-                                    <button key={f.id} onClick={()=>startQuiz(f)} className="w-full bg-white p-4 rounded-xl shadow flex justify-between items-center hover:bg-blue-50 transition">
-                                        <div className="text-left">
-                                            <div className="font-bold text-slate-700">{f.fileName}</div>
-                                            <div className="text-xs text-slate-400">{f.count} ข้อ • {new Date(f.createdAt).toLocaleDateString('th-TH')}</div>
-                                        </div>
-                                        <Icons.ArrowRight className="text-slate-300"/>
-                                    </button>
-                                ))}
-                                {files.filter(f=>f.part===selectedPart).length === 0 && <div className="text-center text-slate-400 p-10">ไม่มีชุดข้อสอบ</div>}
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'quiz' && (
-                        <QuizDisplay questions={quizQuestions} onFinish={finishQuiz} onHome={()=>setPage('home')} />
-                    )}
-
-                    {page === 'result' && (
-                        <div className="h-screen flex flex-col items-center justify-center p-4">
-                            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full animate-pop-in">
-                                <div className="text-6xl mb-4">{score/quizQuestions.length >= 0.6 ? '🏆' : '📚'}</div>
-                                <h2 className="text-2xl font-bold mb-2">{score/quizQuestions.length >= 0.6 ? 'สอบผ่าน!' : 'พยายามอีกนิด!'}</h2>
-                                <div className="text-4xl font-black text-blue-600 mb-6">{score} / {quizQuestions.length}</div>
-                                <div className="space-y-2">
-                                    <button onClick={()=>setPage('home')} className="w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-600">กลับหน้าหลัก</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'admin' && <AdminScreen goBack={()=>setPage('home')} user={user} />}
-                    
-                    {page === 'summary' && (
-                        <div className="p-4 max-w-3xl mx-auto pt-8">
-                            <button onClick={()=>setPage('home')} className="mb-4 flex items-center gap-2 font-bold text-slate-500"><Icons.ArrowLeft/> กลับ</button>
-                            <h2 className="text-2xl font-bold mb-4">สรุปเนื้อหา</h2>
-                            <div className="space-y-4">
-                                <div className="bg-white p-6 rounded-xl shadow">
-                                    <h3 className="font-bold text-lg mb-2 text-blue-600">สูตรอนุกรม (ภาค ก)</h3>
-                                    <p className="text-slate-600">1. ระยะห่างคงที่ (2, 4, 6, 8)<br/>2. ระยะห่าง 2 ชั้น (ชั้นแรกไม่เท่า ชั้นสองเท่ากัน)<br/>3. ยกกำลัง (1, 4, 9, 16)</p>
-                                </div>
-                                <div className="bg-white p-6 rounded-xl shadow">
-                                    <h3 className="font-bold text-lg mb-2 text-purple-600">งานสารบรรณ (ภาค ข)</h3>
-                                    <p className="text-slate-600">หนังสือราชการ 6 ชนิด: ภายนอก, ภายใน, ประทับตรา, สั่งการ, ประชาสัมพันธ์, เจ้าหน้าที่ทำขึ้น</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'analysis' && (
-                        <div className="p-4 max-w-3xl mx-auto pt-8">
-                            <button onClick={()=>setPage('home')} className="mb-4 flex items-center gap-2 font-bold text-slate-500"><Icons.ArrowLeft/> กลับ</button>
-                            <h2 className="text-2xl font-bold mb-4">วิเคราะห์ผล</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div className="bg-white p-4 rounded-xl shadow text-center">
-                                    <div className="text-sm text-slate-500">สอบไปแล้ว</div>
-                                    <div className="text-2xl font-bold">{results.length} ครั้ง</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-xl shadow text-center">
-                                    <div className="text-sm text-slate-500">คะแนนเฉลี่ย</div>
-                                    <div className="text-2xl font-bold text-blue-600">{results.length > 0 ? (results.reduce((a,b)=>a+b.score,0)/results.reduce((a,b)=>a+b.total,0)*100).toFixed(0) : 0}%</div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow">
-                                <h3 className="font-bold mb-4 text-slate-700">ประวัติล่าสุด</h3>
-                                {results.map((r,i) => (
-                                    <div key={i} className="flex justify-between items-center py-3 border-b last:border-0">
-                                        <div>
-                                            <div className="font-bold text-sm">ภาค {r.part}</div>
-                                            <div className="text-xs text-slate-400">{new Date(r.timestamp).toLocaleDateString('th-TH')}</div>
-                                        </div>
-                                        <div className="font-bold text-lg">{r.score}/{r.total}</div>
-                                    </div>
-                                ))}
-                                {results.length === 0 && <div className="text-center text-slate-400">ไม่มีข้อมูล</div>}
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
@@ -531,7 +357,7 @@
                     setIdx(i=>i+1);
                     setSelected(null);
                 } else {
-                    onFinish(score + (selected === questions[idx].correctAnswer ? 0 : 0)); // Score updated in handleAns
+                    onFinish(score + (selected === questions[idx].correctAnswer ? 0 : 0));
                 }
             };
 
@@ -548,28 +374,229 @@
                         <h2 className="text-xl font-bold text-slate-800 mb-6">{q.question}</h2>
                         <div className="space-y-3">
                             {q.options.map((opt, i) => (
-                                <button 
-                                    key={i} 
-                                    onClick={()=>handleAns(i)}
-                                    className={`w-full p-4 rounded-xl text-left border-2 transition-all ${
-                                        selected === null ? 'border-slate-100 hover:border-blue-200' :
-                                        i === q.correctAnswer ? 'border-green-500 bg-green-50 text-green-800' :
-                                        selected === i ? 'border-red-500 bg-red-50 text-red-800' : 'border-slate-100 opacity-50'
-                                    }`}
-                                >
-                                    {opt}
-                                </button>
+                                <button key={i} onClick={()=>handleAns(i)} className={`w-full p-4 rounded-xl text-left border-2 transition-all ${selected === null ? 'border-slate-100 hover:border-blue-200' : i === q.correctAnswer ? 'border-green-500 bg-green-50 text-green-800' : selected === i ? 'border-red-500 bg-red-50 text-red-800' : 'border-slate-100 opacity-50'}`}>{opt}</button>
                             ))}
                         </div>
-                        {selected !== null && (
-                            <div className="mt-6 p-4 bg-blue-50 rounded-xl text-blue-800 animate-slide-up">
-                                <b>เฉลย:</b> {q.explanation}
-                            </div>
-                        )}
+                        {selected !== null && <div className="mt-6 p-4 bg-blue-50 rounded-xl text-blue-800 animate-slide-up"><b>เฉลย:</b> {q.explanation}</div>}
                     </div>
-                    <button onClick={next} disabled={selected===null} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg disabled:opacity-50">
-                        {idx+1 === questions.length ? 'ส่งคำตอบ' : 'ข้อถัดไป'}
-                    </button>
+                    <button onClick={next} disabled={selected===null} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg disabled:opacity-50">{idx+1 === questions.length ? 'ส่งคำตอบ' : 'ข้อถัดไป'}</button>
+                </div>
+            );
+        };
+
+        const MainApp = () => {
+            const [page, setPage] = useState('home'); 
+            const [user, setUser] = useState(null);
+            const [files, setFiles] = useState([]);
+            const [selectedPart, setSelectedPart] = useState(null);
+            const [quizQuestions, setQuizQuestions] = useState([]);
+            const [score, setScore] = useState(0);
+            const [ready, setReady] = useState(false);
+            const [loadingQuiz, setLoadingQuiz] = useState(false);
+            const [results, setResults] = useState([]);
+            const [openSummaryId, setOpenSummaryId] = useState(null);
+
+            useEffect(() => {
+                const checkFB = () => {
+                    if(window.FB) {
+                        setReady(true);
+                        const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.FB;
+                        const initAuth = async () => {
+                            try {
+                                if(window.__initial_auth_token) await signInWithCustomToken(auth, window.__initial_auth_token);
+                                else await signInAnonymously(auth);
+                            } catch(e) { console.error(e); }
+                        };
+                        initAuth();
+                        onAuthStateChanged(auth, setUser);
+                    } else setTimeout(checkFB, 500);
+                };
+                checkFB();
+            }, []);
+
+            useEffect(() => {
+                if(!user || !ready) return;
+                const { db, collection, onSnapshot, appId, orderBy, query } = window.FB;
+                onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc')), (snap) => {
+                    setFiles(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                });
+                onSnapshot(query(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), orderBy('timestamp', 'desc')), (snap) => {
+                    setResults(snap.docs.map(d => d.data()));
+                });
+            }, [user, ready]);
+
+            const startQuiz = async (file) => {
+                setLoadingQuiz(true);
+                try {
+                    const { db, collection, getDocs, query, where, appId } = window.FB;
+                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), where('fileId', '==', file.id));
+                    const snap = await getDocs(q);
+                    const qs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    if(qs.length === 0) { alert("ไม่พบข้อสอบในไฟล์นี้"); } 
+                    else { setQuizQuestions(qs); setPage('quiz'); }
+                } catch(e) { alert("Error loading quiz"); }
+                setLoadingQuiz(false);
+            };
+
+            const finishQuiz = async (s) => {
+                setScore(s); setPage('result');
+                if(user) {
+                    const { db, collection, addDoc, appId } = window.FB;
+                    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), { score: s, total: quizQuestions.length, timestamp: Date.now(), part: selectedPart });
+                }
+            };
+
+            if(!ready) return <div className="h-screen flex items-center justify-center text-slate-500"><Icons.Loader/> Loading...</div>;
+
+            const counts = { A: files.filter(f=>f.part==='A').length, B: files.filter(f=>f.part==='B').length };
+
+            return (
+                <div className="min-h-screen">
+                    <div className="fixed inset-0 -z-10 bg-slate-50"></div>
+                    
+                    {page === 'home' && (
+                        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+                            <button onClick={()=>setPage('admin')} className="absolute top-4 right-4 p-2 bg-white rounded-full shadow"><Icons.Settings/></button>
+                            <div className="mb-8 text-center">
+                                <div className="inline-block p-4 bg-blue-600 rounded-3xl shadow-lg mb-4 text-white"><Icons.Book/></div>
+                                <h1 className="text-3xl font-bold text-slate-800">คลังข้อสอบราชการ</h1>
+                                <p className="text-slate-500">ฝึกฝนเพื่ออนาคต</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+                                <button onClick={()=>{setSelectedPart('A'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-blue-100 group">
+                                    <div className="flex justify-between items-center mb-2"><span className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Check/></span><span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.A} ชุด</span></div>
+                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-blue-600">ภาค ก</h2>
+                                    <p className="text-sm text-slate-500">ความรู้ทั่วไป</p>
+                                </button>
+                                <button onClick={()=>{setSelectedPart('B'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-purple-100 group">
+                                    <div className="flex justify-between items-center mb-2"><span className="bg-purple-100 text-purple-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Briefcase/></span><span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.B} ชุด</span></div>
+                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-purple-600">ภาค ข</h2>
+                                    <p className="text-sm text-slate-500">ความรู้เฉพาะตำแหน่ง</p>
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mt-4">
+                                <button onClick={()=>setPage('summary')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-orange-100 group">
+                                    <div className="flex justify-between items-center mb-2"><span className="bg-orange-100 text-orange-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.FileText/></span></div>
+                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-orange-600">สรุปเนื้อหา</h2>
+                                    <p className="text-sm text-slate-500">ทบทวนบทเรียน</p>
+                                </button>
+                                <button onClick={()=>setPage('analysis')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-green-100 group">
+                                    <div className="flex justify-between items-center mb-2"><span className="bg-green-100 text-green-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Chart/></span></div>
+                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-green-600">วิเคราะห์ผล</h2>
+                                    <p className="text-sm text-slate-500">สถิติการสอบ</p>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {page === 'selection' && (
+                        <div className="p-4 pt-8 max-w-2xl mx-auto">
+                            <div className="flex items-center gap-4 mb-6">
+                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
+                                <h2 className="text-2xl font-bold">เลือกชุดข้อสอบ ภาค {selectedPart}</h2>
+                            </div>
+                            {loadingQuiz && <div className="text-center p-10"><Icons.Loader/> กำลังโหลด...</div>}
+                            <div className="space-y-3">
+                                {files.filter(f=>f.part===selectedPart).map(f => (
+                                    <button key={f.id} onClick={()=>startQuiz(f)} className="w-full bg-white p-4 rounded-xl shadow flex justify-between items-center hover:bg-blue-50 transition group">
+                                        <div className="text-left">
+                                            <div className="font-bold text-slate-700 group-hover:text-blue-600">{f.fileName}</div>
+                                            <div className="text-xs text-slate-400">{f.count} ข้อ • {new Date(f.createdAt).toLocaleDateString('th-TH')}</div>
+                                        </div>
+                                        <div className="text-slate-300 group-hover:text-blue-500"><Icons.ArrowRight/></div>
+                                    </button>
+                                ))}
+                                {!loadingQuiz && files.filter(f=>f.part===selectedPart).length === 0 && <div className="text-center text-slate-400 p-10">ไม่มีชุดข้อสอบ</div>}
+                            </div>
+                        </div>
+                    )}
+
+                    {page === 'quiz' && <QuizDisplay questions={quizQuestions} onFinish={finishQuiz} onHome={()=>setPage('home')} />}
+
+                    {page === 'result' && (
+                        <div className="h-screen flex flex-col items-center justify-center p-4">
+                            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full animate-pop-in">
+                                <div className="text-6xl mb-4">{score/quizQuestions.length >= 0.6 ? <span className="text-yellow-500"><Icons.Trophy/></span> : <span className="text-slate-400"><Icons.Frown/></span>}</div>
+                                <h2 className="text-2xl font-bold mb-2">{score/quizQuestions.length >= 0.6 ? 'สอบผ่าน!' : 'พยายามอีกนิด!'}</h2>
+                                <div className="text-4xl font-black text-blue-600 mb-6">{score} / {quizQuestions.length}</div>
+                                <button onClick={()=>setPage('home')} className="w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-200"><Icons.Home/> กลับหน้าหลัก</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {page === 'admin' && <AdminScreen goBack={()=>setPage('home')} user={user} />}
+                    
+                    {page === 'summary' && (
+                        <div className="p-4 max-w-3xl mx-auto pt-8">
+                            <div className="flex items-center gap-4 mb-6">
+                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
+                                <h2 className="text-2xl font-bold">สรุปเนื้อหา</h2>
+                            </div>
+                            <div className="space-y-4">
+                                {SUMMARIES.map(item => (
+                                    <div key={item.id} className="bg-white rounded-xl shadow overflow-hidden border border-slate-100">
+                                        <button onClick={()=>setOpenSummaryId(openSummaryId === item.id ? null : item.id)} className="w-full p-5 flex items-center justify-between hover:bg-slate-50 text-left">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`p-2 rounded-lg ${item.category==='ภาค ก'?'bg-blue-100 text-blue-600':'bg-purple-100 text-purple-600'}`}><Icons.FileText/></div>
+                                                <div>
+                                                    <h3 className="font-bold text-slate-700">{item.title}</h3>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${item.category==='ภาค ก'?'bg-blue-50 text-blue-600':'bg-purple-50 text-purple-600'}`}>{item.category}</span>
+                                                </div>
+                                            </div>
+                                            <div className={`transition-transform ${openSummaryId===item.id?'rotate-180':''}`}><Icons.ChevronDown/></div>
+                                        </button>
+                                        {openSummaryId === item.id && (
+                                            <div className="p-5 pt-0 border-t border-slate-50 text-slate-600 text-sm leading-relaxed">
+                                                <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {page === 'analysis' && (
+                        <div className="p-4 max-w-3xl mx-auto pt-8">
+                            <div className="flex items-center gap-4 mb-6">
+                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
+                                <h2 className="text-2xl font-bold">วิเคราะห์ผล</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
+                                    <div className="text-sm text-slate-500 mb-1">สอบไปแล้ว</div>
+                                    <div className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-2"><Icons.Trophy className="text-yellow-500" size={20}/> {results.length} ครั้ง</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
+                                    <div className="text-sm text-slate-500 mb-1">คะแนนเฉลี่ย</div>
+                                    <div className="text-2xl font-bold text-blue-600 flex items-center justify-center gap-2"><Icons.TrendingUp className="text-blue-500" size={20}/> {results.length > 0 ? (results.reduce((a,b)=>a+b.score,0)/results.reduce((a,b)=>a+b.total,0)*100).toFixed(0) : 0}%</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
+                                    <div className="text-sm text-slate-500 mb-1">สอบผ่าน</div>
+                                    <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-2"><Icons.PieChart className="text-green-500" size={20}/> {results.filter(r=>r.score/r.total>=0.6).length} ครั้ง</div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow">
+                                <h3 className="font-bold mb-4 text-slate-700 flex items-center gap-2"><Icons.Clock className="text-slate-400"/> ประวัติล่าสุด</h3>
+                                {results.map((r,i) => {
+                                    const matchedFile = files.find(f => f.id === r.fileId);
+                                    return (
+                                        <div key={i} className="flex justify-between items-center py-3 border-b last:border-0 hover:bg-slate-50 p-2 rounded-lg transition">
+                                            <div>
+                                                <div className="font-bold text-sm text-slate-700 line-clamp-1">{matchedFile ? matchedFile.fileName : 'แบบทดสอบ'}</div>
+                                                <div className="flex gap-2 text-xs text-slate-400 mt-1">
+                                                    <span>{new Date(r.timestamp).toLocaleDateString('th-TH')}</span>
+                                                    <span className={r.part==='A'?'text-blue-500':'text-purple-500'}>ภาค {r.part}</span>
+                                                </div>
+                                            </div>
+                                            <div className={`font-bold text-lg ${r.score/r.total>=0.6?'text-green-600':'text-red-500'}`}>{r.score}/{r.total}</div>
+                                        </div>
+                                    );
+                                })}
+                                {results.length === 0 && <div className="text-center text-slate-400 py-4">ไม่มีข้อมูลการสอบ</div>}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
