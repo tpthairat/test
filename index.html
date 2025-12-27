@@ -15,6 +15,8 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
+    <!-- Chart.js for Analysis (Optional but good for stats) - Using simple CSS/SVG instead to keep single file clean -->
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -63,7 +65,12 @@
             doc,
             getDoc,
             deleteDoc,
-            updateDoc
+            updateDoc,
+            where,
+            getDocs,
+            writeBatch,
+            orderBy,
+            serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Config fallback logic
@@ -110,7 +117,12 @@
             updateDoc,
             doc,
             onSnapshot,
-            query
+            query,
+            where,
+            getDocs,
+            writeBatch,
+            orderBy,
+            serverTimestamp
         };
         
         // Signal that Firebase is ready
@@ -119,8 +131,7 @@
 
     <!-- React Application -->
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const QUESTIONS_PER_SET = 20; // กำหนดจำนวนข้อต่อชุด
+        const { useState, useEffect, useRef, useMemo } = React;
 
         // --- Icon Components ---
         const IconBase = ({ children, size = 24, className = "" }) => (
@@ -155,7 +166,12 @@
             Edit: (p) => <IconBase {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></IconBase>,
             Search: (p) => <IconBase {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></IconBase>,
             X: (p) => <IconBase {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconBase>,
-            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>
+            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>,
+            FileText: (p) => <IconBase {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></IconBase>,
+            ChevronDown: (p) => <IconBase {...p}><path d="m6 9 6 6 6-6"/></IconBase>,
+            BarChart: (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
+            TrendingUp: (p) => <IconBase {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></IconBase>,
+            PieChart: (p) => <IconBase {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></IconBase>
         };
 
         // --- Mock Data ---
@@ -163,6 +179,71 @@
             { part: 'A', category: "ความสามารถทั่วไป", question: "จงหาตัวเลขถัดไป: 2, 5, 10, ...", options: ["17", "20", "25", "26"], correctAnswer: 0, explanation: "เพิ่มทีละเลขคี่ 3, 5, 7", createdAt: Date.now() },
             { part: 'A', category: "ภาษาไทย", question: "ข้อใดสะกดถูก?", options: ["อนุญาติ", "อนุญาต", "กฏหมาย", "ศรีษะ"], correctAnswer: 1, explanation: "อนุญาต ไม่มีสระอิ", createdAt: Date.now() + 1 },
             { part: 'B', category: "ระเบียบ", question: "หนังสือภายใน ใช้กระดาษอะไร?", options: ["ตราครุฑ", "บันทึกข้อความ", "อาร์ตมัน", "A4 เปล่า"], correctAnswer: 1, explanation: "หนังสือภายในใช้กระดาษบันทึกข้อความ", createdAt: Date.now() + 2 }
+        ];
+
+        // --- Summary Content Mock Data ---
+        const SUMMARIES = [
+            {
+                id: 1,
+                title: "สรุปสูตรคณิตศาสตร์ (อนุกรม)",
+                category: "ภาค ก",
+                content: `
+                    <h4 class="font-bold text-lg mb-2 text-slate-800">1. อนุกรมเพิ่มคงที่</h4>
+                    <p class="mb-4 text-slate-600">คือการบวกด้วยเลขเดิมซ้ำๆ เช่น 2, 4, 6, 8 (บวกทีละ 2)</p>
+                    <h4 class="font-bold text-lg mb-2 text-slate-800">2. อนุกรมเพิ่มแบบมีลำดับ</h4>
+                    <p class="mb-4 text-slate-600">การบวกที่ตัวบวกเพิ่มขึ้นเรื่อยๆ เช่น 2, 5, 10, 17 (+3, +5, +7)</p>
+                    <h4 class="font-bold text-lg mb-2 text-slate-800">3. อนุกรมยกกำลัง</h4>
+                    <p class="text-slate-600">เลขยกกำลังเรียงกัน เช่น 1, 4, 9, 16 (1², 2², 3², 4²)</p>
+                `
+            },
+            {
+                id: 2,
+                title: "คำราชาศัพท์ที่ควรรู้",
+                category: "ภาค ก",
+                content: `
+                    <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                        <li><b>พระอัยกา</b> = ปู่, ตา</li>
+                        <li><b>พระอัยกี</b> = ย่า, ยาย</li>
+                        <li><b>พระชนก</b> = พ่อ</li>
+                        <li><b>พระชนนี</b> = แม่</li>
+                        <li><b>พระอนุชา</b> = น้องชาย</li>
+                        <li><b>พระขนิษฐา</b> = น้องสาว</li>
+                    </ul>
+                `
+            },
+            {
+                id: 3,
+                title: "สรุปงานสารบรรณ (ฉบับย่อ)",
+                category: "ภาค ข",
+                content: `
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <b class="text-yellow-800">หนังสือราชการมี 6 ชนิด</b>
+                        <ol class="list-decimal pl-5 mt-2 space-y-1 text-slate-700">
+                            <li>หนังสือภายนอก (ใช้ตราครุฑ)</li>
+                            <li>หนังสือภายใน (ใช้บันทึกข้อความ)</li>
+                            <li>หนังสือประทับตรา (ใช้ตราครุฑ แทนการลงชื่อ)</li>
+                            <li>หนังสือสั่งการ (คำสั่ง, ระเบียบ, ข้อบังคับ)</li>
+                            <li>หนังสือประชาสัมพันธ์ (ประกาศ, แถลงการณ์, ข่าว)</li>
+                            <li>หนังสือที่เจ้าหน้าที่ทำขึ้นหรือรับไว้</li>
+                        </ol>
+                    </div>
+                `
+            },
+            {
+                id: 4,
+                title: "หลักกฎหมายมหาชนเบื้องต้น",
+                category: "ภาค ข",
+                content: `
+                    <p class="mb-2 text-slate-600">กฎหมายมหาชน คือ กฎหมายที่กำหนดความสัมพันธ์ระหว่างรัฐกับราษฎร</p>
+                    <h4 class="font-bold text-md mt-4 mb-2 text-slate-800">ตัวอย่างกฎหมายมหาชน</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600">
+                        <li>รัฐธรรมนูญ</li>
+                        <li>กฎหมายปกครอง</li>
+                        <li>กฎหมายอาญา</li>
+                        <li>พระราชบัญญัติประกอบรัฐธรรมนูญ</li>
+                    </ul>
+                `
+            }
         ];
 
         // --- Helper: CSV Parser ---
@@ -177,7 +258,6 @@
                 const clean = (str) => str ? str.replace(/^"|"$/g, '').trim() : "";
                 if (parts.length >= 7) {
                     result.push({
-                        part: parts.length >= 9 ? clean(parts[0]).toUpperCase() : 'A', 
                         category: parts.length >= 9 ? clean(parts[1]) : 'ทั่วไป', 
                         question: clean(parts.length >= 9 ? parts[2] : parts[0]),
                         options: [
@@ -197,7 +277,7 @@
 
         // --- Components ---
 
-        const WelcomeScreen = ({ onSelectPart, goToAdmin, questionCounts, isLoading, authError }) => (
+        const WelcomeScreen = ({ onSelectPart, goToAdmin, goToSummary, goToAnalysis, fileStats, isLoading, authError }) => (
             <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 text-center relative overflow-hidden">
                 <button 
                     onClick={goToAdmin}
@@ -233,69 +313,208 @@
                             <p className="text-xs text-slate-500 mt-2">โปรดตรวจสอบการตั้งค่า Firebase</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-3xl mx-auto w-full px-2 sm:px-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto w-full px-2 sm:px-4">
+                            {/* Exam Buttons */}
                             <button 
                                 onClick={() => onSelectPart('A')}
-                                className="group relative bg-white/80 backdrop-blur-xl p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 transform active:scale-[0.98] md:hover:-translate-y-2 text-left border border-white/50 overflow-hidden"
+                                className="group relative bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-[1.5rem] shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 transform active:scale-[0.98] md:hover:-translate-y-2 text-left border border-white/50 overflow-hidden"
                             >
-                                <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-bl-[3rem] md:rounded-bl-[4rem] -mr-6 -mt-6 transition-all group-hover:scale-110"></div>
+                                <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-bl-[3rem] -mr-6 -mt-6 transition-all group-hover:scale-110"></div>
                                 <div className="relative z-10">
-                                    <div className="flex items-start justify-between mb-4 md:mb-6">
-                                        <div className="p-3 md:p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl md:rounded-2xl shadow-lg text-white group-hover:scale-110 transition-transform duration-300">
-                                            <Icons.GraduationCap size={24} className="md:w-8 md:h-8" />
+                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                        <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg text-white group-hover:scale-110 transition-transform">
+                                            <Icons.GraduationCap size={24} />
                                         </div>
-                                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 md:px-3 rounded-full text-xs font-bold shadow-inner">
-                                            <Icons.Star size={10} className="fill-current md:w-3 md:h-3" /> {questionCounts.A || 0} ข้อ
-                                        </div>
+                                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">{fileStats.A || 0} ชุด</span>
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1 md:mb-2 group-hover:text-blue-700 transition-colors">ภาค ก</h2>
-                                    <p className="text-gray-500 text-xs md:text-sm mb-4 md:mb-6 line-clamp-1">ความรู้ความสามารถทั่วไป (คณิต, ไทย, อังกฤษ)</p>
-                                    <div className="flex items-center text-blue-600 font-semibold text-sm md:text-base group-hover:translate-x-2 transition-transform">
-                                        เลือกชุดข้อสอบ <Icons.ChevronRight size={16} className="md:w-5 md:h-5 ml-1" />
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-1 group-hover:text-blue-700 transition-colors">ภาค ก</h2>
+                                    <p className="text-gray-500 text-xs md:text-sm mb-3 line-clamp-1">ความรู้ความสามารถทั่วไป</p>
+                                    <div className="flex items-center text-blue-600 font-semibold text-xs md:text-sm">
+                                        เริ่มสอบ <Icons.ChevronRight size={14} className="ml-1" />
                                     </div>
                                 </div>
                             </button>
 
                             <button 
                                 onClick={() => onSelectPart('B')}
-                                className="group relative bg-white/80 backdrop-blur-xl p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 transform active:scale-[0.98] md:hover:-translate-y-2 text-left border border-white/50 overflow-hidden"
+                                className="group relative bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-[1.5rem] shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 transform active:scale-[0.98] md:hover:-translate-y-2 text-left border border-white/50 overflow-hidden"
                             >
-                                <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-bl-[3rem] md:rounded-bl-[4rem] -mr-6 -mt-6 transition-all group-hover:scale-110"></div>
+                                <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-bl-[3rem] -mr-6 -mt-6 transition-all group-hover:scale-110"></div>
                                 <div className="relative z-10">
-                                    <div className="flex items-start justify-between mb-4 md:mb-6">
-                                        <div className="p-3 md:p-4 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-xl md:rounded-2xl shadow-lg text-white group-hover:scale-110 transition-transform duration-300">
-                                            <Icons.Briefcase size={24} className="md:w-8 md:h-8" />
+                                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                                        <div className="p-3 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-2xl shadow-lg text-white group-hover:scale-110 transition-transform">
+                                            <Icons.Briefcase size={24} />
                                         </div>
-                                        <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 md:px-3 rounded-full text-xs font-bold shadow-inner">
-                                            <Icons.Star size={10} className="fill-current md:w-3 md:h-3" /> {questionCounts.B || 0} ข้อ
-                                        </div>
+                                        <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs font-bold">{fileStats.B || 0} ชุด</span>
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1 md:mb-2 group-hover:text-purple-700 transition-colors">ภาค ข</h2>
-                                    <p className="text-gray-500 text-xs md:text-sm mb-4 md:mb-6 line-clamp-1">ความรู้ความสามารถเฉพาะตำแหน่ง (กฎหมาย)</p>
-                                    <div className="flex items-center text-purple-600 font-semibold text-sm md:text-base group-hover:translate-x-2 transition-transform">
-                                        เลือกชุดข้อสอบ <Icons.ChevronRight size={16} className="md:w-5 md:h-5 ml-1" />
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-1 group-hover:text-purple-700 transition-colors">ภาค ข</h2>
+                                    <p className="text-gray-500 text-xs md:text-sm mb-3 line-clamp-1">ความรู้เฉพาะตำแหน่ง</p>
+                                    <div className="flex items-center text-purple-600 font-semibold text-xs md:text-sm">
+                                        เริ่มสอบ <Icons.ChevronRight size={14} className="ml-1" />
                                     </div>
+                                </div>
+                            </button>
+
+                            {/* Summary & Analysis Buttons */}
+                            <button 
+                                onClick={goToSummary}
+                                className="group bg-white/70 backdrop-blur-md p-4 rounded-[1.5rem] shadow hover:shadow-lg border border-white/60 flex items-center gap-4 transition-all hover:bg-white active:scale-95"
+                            >
+                                <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                                    <Icons.FileText size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-bold text-slate-700 group-hover:text-orange-600 transition-colors">สรุปเนื้อหา</h3>
+                                    <p className="text-xs text-slate-500">ทบทวนบทเรียน</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={goToAnalysis}
+                                className="group bg-white/70 backdrop-blur-md p-4 rounded-[1.5rem] shadow hover:shadow-lg border border-white/60 flex items-center gap-4 transition-all hover:bg-white active:scale-95"
+                            >
+                                <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:bg-green-500 group-hover:text-white transition-colors">
+                                    <Icons.BarChart size={20} />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-bold text-slate-700 group-hover:text-green-600 transition-colors">วิเคราะห์ผล</h3>
+                                    <p className="text-xs text-slate-500">ดูสถิติการสอบ</p>
                                 </div>
                             </button>
                         </div>
                     )}
 
-                    <div className="mt-8 md:mt-16 text-slate-500 text-xs md:text-sm flex items-center justify-center gap-2 font-medium pb-4">
-                        <Icons.Info size={14} className="md:w-4 md:h-4" />
+                    <div className="mt-8 text-slate-500 text-xs md:text-sm flex items-center justify-center gap-2 font-medium pb-4">
+                        <Icons.Info size={14} />
                         <span>เกณฑ์การผ่าน 60% ในแต่ละชุดวิชา</span>
                     </div>
                 </div>
             </div>
         );
 
-        const SelectionScreen = ({ questions, onSelectSet, onBack, partName }) => {
-            const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
-            const sets = Array.from({ length: totalSets }, (_, i) => ({
-                id: i + 1,
-                start: i * QUESTIONS_PER_SET,
-                count: Math.min(QUESTIONS_PER_SET, questions.length - i * QUESTIONS_PER_SET)
-            }));
+        const SummaryScreen = ({ onBack }) => {
+            const [openId, setOpenId] = useState(null);
 
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center pt-8 overflow-y-auto">
+                     <div className="w-full max-w-3xl bg-white/90 backdrop-blur-xl p-4 rounded-3xl shadow-lg mb-6 flex justify-between items-center border border-white/60 z-10 sticky top-4">
+                        <div className="flex items-center gap-3">
+                             <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
+                                <Icons.ArrowLeft size={24} />
+                             </button>
+                             <div>
+                                <h2 className="font-bold text-slate-800 text-lg">สรุปเนื้อหาเตรียมสอบ</h2>
+                                <p className="text-xs text-slate-500">ทบทวนความรู้ก่อนลงสนามจริง</p>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-3xl space-y-4 animate-fade-in-up pb-20">
+                        {SUMMARIES.map((item) => (
+                            <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                                <button 
+                                    onClick={() => setOpenId(openId === item.id ? null : item.id)}
+                                    className="w-full p-5 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-4 text-left">
+                                        <div className={`p-2.5 rounded-xl ${item.category === 'ภาค ก' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                                            <Icons.FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-700 text-base md:text-lg">{item.title}</h3>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.category === 'ภาค ก' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                                                {item.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className={`text-slate-400 transition-transform duration-300 ${openId === item.id ? 'rotate-180' : ''}`}>
+                                        <Icons.ChevronDown size={20} />
+                                    </div>
+                                </button>
+                                
+                                {openId === item.id && (
+                                    <div className="p-5 pt-0 bg-white border-t border-slate-50 text-slate-600 text-sm leading-relaxed animate-slide-up">
+                                        <div className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: item.content }} />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const AnalysisScreen = ({ onBack, userResultStats }) => {
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center pt-8 overflow-y-auto">
+                    <div className="w-full max-w-3xl bg-white/90 backdrop-blur-xl p-4 rounded-3xl shadow-lg mb-6 flex justify-between items-center border border-white/60 z-10 sticky top-4">
+                        <div className="flex items-center gap-3">
+                             <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
+                                <Icons.ArrowLeft size={24} />
+                             </button>
+                             <div>
+                                <h2 className="font-bold text-slate-800 text-lg">วิเคราะห์ผลการสอบ</h2>
+                                <p className="text-xs text-slate-500">สถิติและพัฒนาการของคุณ</p>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-3xl space-y-6 animate-fade-in-up pb-20">
+                        {/* Stats Overview */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <div className="p-3 bg-blue-100 text-blue-600 rounded-full mb-3"><Icons.Trophy size={24} /></div>
+                                <h3 className="text-3xl font-bold text-slate-800">{userResultStats.totalExams}</h3>
+                                <p className="text-xs text-slate-500">จำนวนชุดที่สอบ</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <div className="p-3 bg-green-100 text-green-600 rounded-full mb-3"><Icons.TrendingUp size={24} /></div>
+                                <h3 className="text-3xl font-bold text-slate-800">{userResultStats.avgScore}%</h3>
+                                <p className="text-xs text-slate-500">คะแนนเฉลี่ยรวม</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <div className="p-3 bg-purple-100 text-purple-600 rounded-full mb-3"><Icons.PieChart size={24} /></div>
+                                <h3 className="text-3xl font-bold text-slate-800">{userResultStats.passRate}%</h3>
+                                <p className="text-xs text-slate-500">อัตราการสอบผ่าน</p>
+                            </div>
+                        </div>
+
+                        {/* Recent History */}
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden p-6">
+                            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2">
+                                <Icons.Clock size={20} className="text-slate-400"/> ประวัติการสอบล่าสุด
+                            </h3>
+                            {userResultStats.history.length === 0 ? (
+                                <div className="text-center text-slate-400 py-8 text-sm">ยังไม่มีประวัติการสอบ</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {userResultStats.history.map((res, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                                            <div>
+                                                <h4 className="font-bold text-slate-700 text-sm line-clamp-1">{res.fileName}</h4>
+                                                <div className="flex gap-2 text-xs text-slate-500 mt-1">
+                                                    <span>{new Date(res.timestamp).toLocaleDateString('th-TH')}</span>
+                                                    <span>•</span>
+                                                    <span className={res.part === 'A' ? 'text-blue-600' : 'text-purple-600'}>ภาค {res.part}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className={`font-bold text-lg ${res.percentage >= 60 ? 'text-green-600' : 'text-red-500'}`}>
+                                                    {res.score}/{res.total}
+                                                </div>
+                                                <div className="text-[10px] text-slate-400">{res.percentage.toFixed(0)}%</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SelectionScreen = ({ files, onSelectFile, onBack, partName }) => {
             return (
                 <div className="min-h-screen p-4 flex flex-col items-center pt-8">
                      <div className="w-full max-w-3xl bg-white/90 backdrop-blur-xl p-4 rounded-3xl shadow-lg mb-6 flex justify-between items-center border border-white/60 z-10 sticky top-4">
@@ -311,13 +530,13 @@
                     </div>
 
                     <div className="w-full max-w-2xl space-y-4 animate-fade-in-up">
-                        {sets.length === 0 ? (
-                            <div className="text-center text-slate-500 py-10">ไม่มีข้อสอบในหมวดนี้</div>
+                        {files.length === 0 ? (
+                            <div className="text-center text-slate-500 py-10">ยังไม่มีไฟล์ข้อสอบในหมวดนี้</div>
                         ) : (
-                            sets.map((set) => (
+                            files.map((file) => (
                                 <button 
-                                    key={set.id}
-                                    onClick={() => onSelectSet(set.id - 1)}
+                                    key={file.id}
+                                    onClick={() => onSelectFile(file)}
                                     className="w-full bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-slate-100 hover:border-blue-200 transition-all group text-left flex items-center justify-between"
                                 >
                                     <div className="flex items-center gap-4">
@@ -325,8 +544,8 @@
                                             <Icons.List size={24} />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-700 text-lg group-hover:text-blue-600 transition-colors">ชุดข้อสอบที่ {set.id}</h3>
-                                            <p className="text-sm text-slate-400">จำนวน {set.count} ข้อ</p>
+                                            <h3 className="font-bold text-slate-700 text-lg group-hover:text-blue-600 transition-colors line-clamp-1">{file.fileName}</h3>
+                                            <p className="text-sm text-slate-400">อัพโหลดเมื่อ: {new Date(file.createdAt).toLocaleDateString('th-TH')} • {file.count} ข้อ</p>
                                         </div>
                                     </div>
                                     <Icons.ChevronRight className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
@@ -338,22 +557,25 @@
             );
         };
 
-        const QuizScreen = ({ questions, finishQuiz, partName, goHome }) => {
+        const QuizScreen = ({ questions, finishQuiz, partName, goHome, fileName, isLoading }) => {
             const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
             const [selectedOption, setSelectedOption] = useState(null);
             const [score, setScore] = useState(0);
             const [showExplanation, setShowExplanation] = useState(false);
-            const [timeLeft, setTimeLeft] = useState(60 * questions.length);
-
+            const [timeLeft, setTimeLeft] = useState(0); 
+            
             useEffect(() => {
-                setCurrentQuestionIndex(0);
-                setSelectedOption(null);
-                setScore(0);
-                setShowExplanation(false);
-                setTimeLeft(60 * questions.length);
+                if(questions.length > 0) {
+                    setTimeLeft(60 * questions.length);
+                    setCurrentQuestionIndex(0);
+                    setSelectedOption(null);
+                    setScore(0);
+                    setShowExplanation(false);
+                }
             }, [questions]);
 
             useEffect(() => {
+                if(timeLeft <= 0) return;
                 const timer = setInterval(() => {
                     setTimeLeft((prev) => {
                         if (prev <= 1) {
@@ -365,7 +587,7 @@
                     });
                 }, 1000);
                 return () => clearInterval(timer);
-            }, [score, finishQuiz, questions.length]);
+            }, [score, finishQuiz, questions.length, timeLeft]);
 
             const handleOptionClick = (index) => {
                 if (selectedOption !== null) return;
@@ -397,20 +619,21 @@
                 }
             };
 
-            if (questions.length === 0) return <div className="min-h-screen flex items-center justify-center text-slate-500 font-bold text-xl">ไม่พบข้อสอบในระบบ</div>;
+            if (isLoading) return <div className="min-h-screen flex items-center justify-center text-slate-500"><Icons.Loader2 className="animate-spin mr-2"/> กำลังโหลดข้อสอบ...</div>;
+            if (questions.length === 0) return <div className="min-h-screen flex items-center justify-center text-slate-500 font-bold text-xl">ไม่พบข้อสอบในไฟล์นี้</div>;
+            
             const currentQ = questions[currentQuestionIndex];
             const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
             return (
                 <div className="min-h-screen p-3 md:p-4 flex flex-col items-center justify-start pt-4 md:pt-8 pb-8">
                     <div className="w-full max-w-3xl bg-white/90 backdrop-blur-xl p-3 md:p-4 rounded-2xl md:rounded-3xl shadow-lg mb-4 md:mb-8 flex justify-between items-center border border-white/50 z-10 sticky top-2 md:top-4">
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <span className="hidden sm:inline-block bg-gradient-to-r from-slate-800 to-slate-900 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold shadow-md tracking-wide">
-                                {partName}
-                            </span>
-                            <span className="text-slate-600 font-semibold text-xs md:text-sm">
-                                ข้อที่ <span className="text-blue-600 text-base md:text-lg">{currentQuestionIndex + 1}</span> <span className="text-gray-400">/ {questions.length}</span>
-                            </span>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{partName}</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-slate-600 font-bold text-sm line-clamp-1 max-w-[150px] sm:max-w-xs">{fileName}</span>
+                                <span className="text-xs text-slate-400 whitespace-nowrap">ข้อ {currentQuestionIndex + 1}/{questions.length}</span>
+                            </div>
                         </div>
                         <div className="flex items-center gap-3">
                              <div className={`flex items-center gap-1 md:gap-2 font-mono text-base md:text-xl font-bold px-3 py-1 md:px-4 rounded-xl ${timeLeft < 60 ? 'bg-red-50 text-red-500 animate-pulse border border-red-100' : 'bg-slate-50 text-slate-700 border border-slate-100'}`}>
@@ -575,17 +798,30 @@
             );
         };
 
-        const AdminScreen = ({ goBack, onAddQuestions, questions, onSeedData, isSaving, onDeleteQuestion, onUpdateQuestion }) => {
+        const AdminScreen = ({ goBack, onAddFile, files, onDeleteFile, onUpdateQuestion, getQuestionsByFile, onDeleteQuestion }) => {
+            // View Mode: 'files' (list of file sets) or 'questions' (list of questions in a file)
+            const [viewMode, setViewMode] = useState('files'); 
+            const [selectedFile, setSelectedFile] = useState(null);
+            
+            // For File List
             const [previewData, setPreviewData] = useState([]);
             const [errorMsg, setErrorMsg] = useState("");
-            const [searchTerm, setSearchTerm] = useState("");
-            const [editingQuestion, setEditingQuestion] = useState(null);
-            const [importPart, setImportPart] = useState('A'); // State for selected part
+            const [fileName, setFileName] = useState("");
+            const [importPart, setImportPart] = useState('A'); 
+            const [isSaving, setIsSaving] = useState(false);
             const fileInputRef = useRef(null);
 
+            // For Question List (Detail View)
+            const [questions, setQuestions] = useState([]);
+            const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+            const [editingQuestion, setEditingQuestion] = useState(null);
+            const [searchTerm, setSearchTerm] = useState("");
+
+            // --- Handlers for File List ---
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                setFileName(file.name.replace('.csv', '')); // Default name from file
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
@@ -594,11 +830,7 @@
                             setErrorMsg("ไม่พบข้อมูล หรือรูปแบบไฟล์ไม่ถูกต้อง");
                             setPreviewData([]);
                         } else {
-                            // Apply the selected part to all imported items
-                            const parsedWithPart = parsed.map(item => ({
-                                ...item,
-                                part: importPart
-                            }));
+                            const parsedWithPart = parsed.map(item => ({ ...item, part: importPart }));
                             setPreviewData(parsedWithPart);
                             setErrorMsg("");
                         }
@@ -610,31 +842,119 @@
             };
 
             const handleSaveImport = async () => {
-                if (previewData.length > 0) {
-                    await onAddQuestions(previewData);
+                if (previewData.length > 0 && fileName.trim()) {
+                    setIsSaving(true);
+                    await onAddFile(fileName, importPart, previewData);
                     setPreviewData([]);
+                    setFileName("");
                     if(fileInputRef.current) fileInputRef.current.value = "";
+                    setIsSaving(false);
+                } else {
+                    alert("กรุณาระบุชื่อไฟล์และเลือกไฟล์ CSV");
                 }
             };
 
-            const handleUpdate = async (updatedData) => {
+            const handleDeleteFile = async (file) => {
+                if(confirm(`ต้องการลบไฟล์ "${file.fileName}" และข้อสอบทั้งหมดในไฟล์นี้ใช่หรือไม่?`)) {
+                    await onDeleteFile(file.id);
+                }
+            };
+
+            const handleManageFile = async (file) => {
+                setSelectedFile(file);
+                setViewMode('questions');
+                setIsLoadingQuestions(true);
+                const qs = await getQuestionsByFile(file.id);
+                setQuestions(qs);
+                setIsLoadingQuestions(false);
+            };
+
+            // --- Handlers for Question List ---
+            const handleUpdateQ = async (updatedData) => {
                 await onUpdateQuestion(updatedData.id, updatedData);
+                setQuestions(prev => prev.map(q => q.id === updatedData.id ? updatedData : q));
                 setEditingQuestion(null);
             };
 
-            const filteredQuestions = questions.filter(q => 
-                q.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                q.category.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const handleDeleteQ = async (id) => {
+                if(confirm('ต้องการลบข้อสอบข้อนี้ใช่หรือไม่?')) {
+                    await onDeleteQuestion(id);
+                    setQuestions(prev => prev.filter(q => q.id !== id));
+                }
+            }
 
+            // --- Render Logic ---
+
+            if (viewMode === 'questions') {
+                const filteredQuestions = questions.filter(q => 
+                    q.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    q.category.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                return (
+                    <div className="min-h-screen p-4 overflow-y-auto pb-20">
+                        <div className="max-w-6xl mx-auto space-y-6">
+                            <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl border border-white/60 flex items-center justify-between gap-4 sticky top-4 z-20">
+                                <div>
+                                    <div className="text-xs text-slate-500 font-bold uppercase mb-1">กำลังแก้ไขไฟล์</div>
+                                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                        <Icons.FileText className="text-blue-600"/> {selectedFile && selectedFile.fileName}
+                                    </h2>
+                                </div>
+                                <button onClick={() => setViewMode('files')} className="bg-slate-100 text-slate-600 hover:bg-slate-200 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold text-sm">
+                                    <Icons.ArrowLeft size={18} /> กลับไปหน้ารายชื่อไฟล์
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col min-h-[500px]">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center gap-4 bg-slate-50/50">
+                                    <div className="font-bold text-slate-700">รายการข้อสอบ ({questions.length})</div>
+                                    <div className="relative w-full sm:w-64">
+                                        <Icons.Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type="text" placeholder="ค้นหาโจทย์..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 text-sm"/>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto flex-1">
+                                    {isLoadingQuestions ? (
+                                        <div className="p-10 text-center text-slate-500 flex justify-center"><Icons.Loader2 className="animate-spin"/></div>
+                                    ) : (
+                                        <table className="w-full text-left text-slate-600">
+                                            <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500 sticky top-0">
+                                                <tr><th className="px-6 py-4">ข้อที่</th><th className="px-6 py-4">โจทย์</th><th className="px-6 py-4 text-right">จัดการ</th></tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-sm">
+                                                {filteredQuestions.map((q, idx) => (
+                                                    <tr key={q.id} className="hover:bg-blue-50/30">
+                                                        <td className="px-6 py-4 font-mono text-slate-400">{idx + 1}</td>
+                                                        <td className="px-6 py-4 max-w-lg">
+                                                            <div className="line-clamp-2 font-medium text-slate-800">{q.question}</div>
+                                                            <div className="text-xs text-slate-400 mt-1">{q.category}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right space-x-2">
+                                                            <button onClick={() => setEditingQuestion(q)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg"><Icons.Edit size={16}/></button>
+                                                            <button onClick={() => handleDeleteQ(q.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg"><Icons.Trash2 size={16}/></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        {editingQuestion && <EditModal question={editingQuestion} onClose={() => setEditingQuestion(null)} onSave={handleUpdateQ} />}
+                    </div>
+                );
+            }
+
+            // Default View: File List
             return (
                 <div className="min-h-screen p-4 overflow-y-auto pb-20">
                     <div className="max-w-6xl mx-auto space-y-6">
-                        {/* Header */}
                         <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] p-6 shadow-xl border border-white/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
                                 <div className="bg-blue-100 p-2.5 rounded-xl text-blue-600 shadow-sm"><Icons.Settings size={28} /></div>
-                                ระบบจัดการข้อสอบ
+                                ระบบจัดการไฟล์ข้อสอบ
                             </h2>
                             <button onClick={goBack} className="bg-white border-2 border-slate-100 text-slate-600 hover:text-slate-900 hover:border-slate-300 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold text-sm shadow-sm hover:shadow active:scale-95">
                                 <Icons.ArrowLeft size={18} /> กลับหน้าหลัก
@@ -642,135 +962,74 @@
                         </div>
 
                         {/* Import Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-8 rounded-[2rem] shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-center col-span-1 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-                                <Icons.Database size={40} className="mb-4 opacity-90 drop-shadow-md" />
-                                <h3 className="text-blue-100 font-medium mb-1">ข้อสอบทั้งหมดในระบบ</h3>
-                                <p className="text-5xl font-black tracking-tight">{questions.length}</p>
-                                <span className="mt-4 text-[10px] bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">Updated Real-time</span>
-                            </div>
+                        <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100 relative">
+                            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700">
+                                <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><Icons.UploadCloud size={20} /></div>
+                                นำเข้าไฟล์ข้อสอบใหม่ (CSV)
+                            </h3>
 
-                            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100 col-span-1 md:col-span-2 relative">
-                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700">
-                                    <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><Icons.UploadCloud size={20} /></div>
-                                    นำเข้าข้อสอบ (CSV)
-                                </h3>
-
-                                <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                    <label className="block text-xs font-bold text-slate-500 mb-2">เลือกภาควิชาสำหรับไฟล์นี้:</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2">ชื่อไฟล์/ชุดข้อสอบ:</label>
+                                    <input type="text" value={fileName} onChange={e => setFileName(e.target.value)} placeholder="เช่น กฎหมายท้องถิ่น ชุดที่ 1" className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-sm"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2">หมวดวิชา:</label>
                                     <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors border border-transparent hover:border-slate-200">
-                                            <input 
-                                                type="radio" 
-                                                name="importPart" 
-                                                value="A" 
-                                                checked={importPart === 'A'} 
-                                                onChange={(e) => setImportPart(e.target.value)} 
-                                                className="w-4 h-4 text-blue-600" 
-                                            />
-                                            <span className="text-sm font-bold text-blue-700">ภาค ก</span>
+                                        <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer p-3 rounded-xl border transition-all ${importPart === 'A' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                                            <input type="radio" name="importPart" value="A" checked={importPart === 'A'} onChange={(e) => setImportPart(e.target.value)} className="hidden" />
+                                            <span className="text-sm font-bold">ภาค ก</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors border border-transparent hover:border-slate-200">
-                                            <input 
-                                                type="radio" 
-                                                name="importPart" 
-                                                value="B" 
-                                                checked={importPart === 'B'} 
-                                                onChange={(e) => setImportPart(e.target.value)} 
-                                                className="w-4 h-4 text-purple-600" 
-                                            />
-                                            <span className="text-sm font-bold text-purple-700">ภาค ข</span>
+                                        <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer p-3 rounded-xl border transition-all ${importPart === 'B' ? 'bg-purple-50 border-purple-500 text-purple-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                                            <input type="radio" name="importPart" value="B" checked={importPart === 'B'} onChange={(e) => setImportPart(e.target.value)} className="hidden" />
+                                            <span className="text-sm font-bold">ภาค ข</span>
                                         </label>
                                     </div>
-                                </div>
-                                
-                                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                                    <div className="relative flex-1 group">
-                                        <input type="file" accept=".csv" onChange={handleFileChange} ref={fileInputRef} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-blue-400 transition-colors py-2 px-3"/>
-                                    </div>
-                                    {questions.length === 0 && <button onClick={onSeedData} className="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors border border-amber-200"><Icons.RefreshCw size={16} /> โหลดตัวอย่าง</button>}
-                                </div>
-
-                                {previewData.length > 0 && (
-                                    <div className="animate-fade-in-up bg-green-50 p-4 rounded-2xl border border-green-100 flex justify-between items-center">
-                                        <div className="text-green-800 text-sm font-bold flex items-center gap-2"><Icons.CheckCircle size={18} /> พร้อมนำเข้า {previewData.length} ข้อ</div>
-                                        <button onClick={handleSaveImport} disabled={isSaving} className="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-500/20 flex items-center gap-2 active:scale-95 text-sm transition-all">{isSaving ? <Icons.Loader2 size={16} className="animate-spin" /> : <Icons.Save size={16} />} ยืนยัน</button>
-                                    </div>
-                                )}
-                                {errorMsg && <div className="bg-red-50 text-red-600 p-3 rounded-xl mt-2 border border-red-100 flex items-center gap-2 text-sm animate-shake"><Icons.AlertCircle size={18} /> {errorMsg}</div>}
-                            </div>
-                        </div>
-
-                        {/* Management Table Section */}
-                        <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col min-h-[500px]">
-                            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
-                                <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2">
-                                    <div className="bg-orange-100 p-1.5 rounded-lg text-orange-600"><Icons.BookOpen size={20} /></div>
-                                    จัดการรายการข้อสอบ
-                                </h3>
-                                <div className="relative w-full sm:w-64">
-                                    <Icons.Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="ค้นหาโจทย์ หรือ หมวดหมู่..." 
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none text-sm bg-white"
-                                    />
                                 </div>
                             </div>
                             
+                            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                                <div className="relative flex-1 group">
+                                    <input type="file" accept=".csv" onChange={handleFileChange} ref={fileInputRef} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:border-blue-400 transition-colors py-2 px-3"/>
+                                </div>
+                                {files.length === 0 && <button onClick={onSeedData} className="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors border border-amber-200"><Icons.RefreshCw size={16} /> โหลดตัวอย่าง</button>}
+                            </div>
+
+                            {previewData.length > 0 && (
+                                <div className="animate-fade-in-up bg-green-50 p-4 rounded-2xl border border-green-100 flex justify-between items-center">
+                                    <div className="text-green-800 text-sm font-bold flex items-center gap-2"><Icons.CheckCircle size={18} /> พร้อมนำเข้า {previewData.length} ข้อ</div>
+                                    <button onClick={handleSaveImport} disabled={isSaving} className="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-500/20 flex items-center gap-2 active:scale-95 text-sm transition-all">{isSaving ? <Icons.Loader2 size={16} className="animate-spin" /> : <Icons.Save size={16} />} ยืนยันการสร้างไฟล์</button>
+                                </div>
+                            )}
+                            {errorMsg && <div className="bg-red-50 text-red-600 p-3 rounded-xl mt-2 border border-red-100 flex items-center gap-2 text-sm animate-shake"><Icons.AlertCircle size={18} /> {errorMsg}</div>}
+                        </div>
+
+                        {/* File List Table */}
+                        <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col min-h-[400px]">
+                            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2">
+                                    <div className="bg-orange-100 p-1.5 rounded-lg text-orange-600"><Icons.List size={20} /></div>
+                                    รายการไฟล์ข้อสอบที่มีในระบบ
+                                </h3>
+                            </div>
                             <div className="overflow-x-auto flex-1">
                                 <table className="w-full text-left text-slate-600">
-                                    <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500 sticky top-0 z-10 shadow-sm">
-                                        <tr>
-                                            <th className="px-6 py-4 rounded-tl-2xl">วันที่อัพโหลด</th>
-                                            <th className="px-6 py-4">ส่วน</th>
-                                            <th className="px-6 py-4">โจทย์</th>
-                                            <th className="px-6 py-4 text-right rounded-tr-2xl">จัดการ</th>
-                                        </tr>
+                                    <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
+                                        <tr><th className="px-6 py-4">ชื่อชุดข้อสอบ</th><th className="px-6 py-4">หมวด</th><th className="px-6 py-4">จำนวนข้อ</th><th className="px-6 py-4">วันที่สร้าง</th><th className="px-6 py-4 text-right">จัดการ</th></tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-sm">
-                                        {filteredQuestions.length === 0 ? (
-                                            <tr><td colSpan="4" className="text-center py-10 text-slate-400">ไม่พบข้อมูล</td></tr>
+                                        {files.length === 0 ? (
+                                            <tr><td colSpan="5" className="text-center py-10 text-slate-400">ยังไม่มีไฟล์ข้อสอบ</td></tr>
                                         ) : (
-                                            filteredQuestions.map((q) => (
-                                                <tr key={q.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-slate-400 text-xs font-mono">
-                                                        {new Date(q.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col items-start gap-1">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${q.part === 'A' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                                                                ภาค {q.part}
-                                                            </span>
-                                                            <span className="text-xs text-slate-500">{q.category}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 max-w-md">
-                                                        <div className="font-medium text-slate-800 line-clamp-1 mb-1">{q.question}</div>
-                                                        <div className="text-xs text-slate-400 flex gap-2">
-                                                            <span>ตัวเลือก: {q.options.join(', ')}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                            <button 
-                                                                onClick={() => setEditingQuestion(q)}
-                                                                className="p-2 bg-white border border-slate-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm" 
-                                                                title="แก้ไข"
-                                                            >
-                                                                <Icons.Edit size={16} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => { if(confirm('ต้องการลบข้อสอบนี้ใช่หรือไม่?')) onDeleteQuestion(q.id); }}
-                                                                className="p-2 bg-white border border-slate-200 text-red-500 rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors shadow-sm" 
-                                                                title="ลบ"
-                                                            >
-                                                                <Icons.Trash2 size={16} />
-                                                            </button>
-                                                        </div>
+                                            files.map((f) => (
+                                                <tr key={f.id} className="hover:bg-blue-50/30">
+                                                    <td className="px-6 py-4 font-bold text-slate-700">{f.fileName}</td>
+                                                    <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-[10px] font-bold ${f.part === 'A' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>ภาค {f.part}</span></td>
+                                                    <td className="px-6 py-4">{f.count} ข้อ</td>
+                                                    <td className="px-6 py-4 text-slate-400 text-xs">{new Date(f.createdAt).toLocaleDateString('th-TH')}</td>
+                                                    <td className="px-6 py-4 text-right space-x-2">
+                                                        <button onClick={() => handleManageFile(f)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg font-bold text-xs border border-blue-200">แก้ไขข้อสอบ</button>
+                                                        <button onClick={() => handleDeleteFile(f)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg"><Icons.Trash2 size={16}/></button>
                                                     </td>
                                                 </tr>
                                             ))
@@ -780,7 +1039,6 @@
                             </div>
                         </div>
                     </div>
-                    {editingQuestion && <EditModal question={editingQuestion} onClose={() => setEditingQuestion(null)} onSave={handleUpdate} />}
                 </div>
             );
         };
@@ -789,16 +1047,25 @@
         const App = () => {
             const [gameState, setGameState] = useState('welcome'); 
             const [score, setScore] = useState(0);
-            const [questions, setQuestions] = useState([]); 
+            
+            // Files State
+            const [files, setFiles] = useState([]);
+            
+            // Question State
+            const [activeQuestions, setActiveQuestions] = useState([]); // Questions currently being used (Quiz)
+            
+            // Selection State
             const [selectedPart, setSelectedPart] = useState(null); 
-            const [partQuestions, setPartQuestions] = useState([]); // Store questions for selected part
-            const [activeQuestions, setActiveQuestions] = useState([]);
+            const [selectedFile, setSelectedFile] = useState(null); // Which file is selected for quiz
+
+            // Analysis Stats
+            const [userResultStats, setUserResultStats] = useState({ totalExams: 0, avgScore: 0, passRate: 0, history: [] });
+
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
-            const [isSaving, setIsSaving] = useState(false);
             const [authError, setAuthError] = useState(null);
             
-            const { auth, db, appId, signInAnonymously, onAuthStateChanged, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, signInWithCustomToken } = window.FB;
+            const { auth, db, appId, signInAnonymously, onAuthStateChanged, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, getDocs, writeBatch, orderBy, signInWithCustomToken, serverTimestamp } = window.FB;
 
             useEffect(() => {
                 const initAuth = async () => {
@@ -823,61 +1090,151 @@
                 return () => unsubscribe();
             }, []);
 
+            // Fetch Files Metadata (Public)
             useEffect(() => {
                 if (!user) return;
-                const questionsPath = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
-                const userQuestionsQuery = query(questionsPath);
-                const unsubscribe = onSnapshot(userQuestionsQuery, (snapshot) => {
-                    const loadedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Sort by createdAt desc (Newest first)
-                    loadedQuestions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                    setQuestions(loadedQuestions);
+                const filesPath = collection(db, 'artifacts', appId, 'public', 'data', 'files');
+                const filesQuery = query(filesPath, orderBy('createdAt', 'desc'));
+                
+                const unsubscribe = onSnapshot(filesQuery, (snapshot) => {
+                    const loadedFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setFiles(loadedFiles);
                     setIsLoading(false);
                 }, (error) => {
-                    setAuthError("เชื่อมต่อฐานข้อมูลไม่ได้");
+                    // console.error("Error fetching files:", error);
+                    setAuthError("เชื่อมต่อฐานข้อมูลไม่ได้ (Files)");
                     setIsLoading(false);
                 });
                 return () => unsubscribe();
             }, [user]);
 
-            const handleSelectPart = (part) => {
-                const filtered = questions.filter(q => q.part === part);
-                if(filtered.length === 0) { alert("ยังไม่มีข้อสอบในหมวดนี้"); return; }
-                setSelectedPart(part);
-                setPartQuestions(filtered); // Save filtered questions
-                setGameState('selection'); // Go to selection screen instead of quiz
-            };
-
-            const handleSelectSet = (setIndex) => {
-                const start = setIndex * QUESTIONS_PER_SET;
-                const end = start + QUESTIONS_PER_SET;
-                const setQuestions = partQuestions.slice(start, end);
-                setActiveQuestions(setQuestions);
-                setScore(0);
-                setGameState('quiz');
-            };
-
-            const addQuestionsToDB = async (newQuestions) => {
+            // Fetch User Results for Analysis
+            useEffect(() => {
                 if (!user) return;
-                setIsSaving(true);
+                // Private data: user's results
+                const resultsPath = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
+                const resultsQuery = query(resultsPath, orderBy('timestamp', 'desc'));
+
+                const unsubscribe = onSnapshot(resultsQuery, (snapshot) => {
+                    const history = snapshot.docs.map(doc => doc.data());
+                    if (history.length > 0) {
+                        const totalExams = history.length;
+                        const totalScorePercentage = history.reduce((sum, res) => sum + res.percentage, 0);
+                        const avgScore = (totalScorePercentage / totalExams).toFixed(1);
+                        const passedCount = history.filter(res => res.percentage >= 60).length;
+                        const passRate = ((passedCount / totalExams) * 100).toFixed(1);
+                        setUserResultStats({ totalExams, avgScore, passRate, history });
+                    } else {
+                        setUserResultStats({ totalExams: 0, avgScore: 0, passRate: 0, history: [] });
+                    }
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            // Handlers
+            const handleSelectPart = (part) => {
+                setSelectedPart(part);
+                setGameState('selection');
+            };
+
+            const handleSelectFileForQuiz = async (file) => {
+                setSelectedFile(file);
+                // Fetch questions for this file
+                setIsLoading(true);
                 try {
-                    const questionsCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
-                    for (const q of newQuestions) await addDoc(questionsCol, q);
-                    alert(`บันทึกสำเร็จ ${newQuestions.length} ข้อ`);
-                } catch (error) {
-                    alert("เกิดข้อผิดพลาดในการบันทึก");
+                    const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
+                    const qQuery = query(qCol, where('fileId', '==', file.id));
+                    const snapshot = await getDocs(qQuery);
+                    const loadedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setActiveQuestions(loadedQuestions);
+                    setScore(0);
+                    setGameState('quiz');
+                } catch (e) {
+                    alert("เกิดข้อผิดพลาดในการโหลดข้อสอบ");
                 } finally {
-                    setIsSaving(false);
+                    setIsLoading(false);
                 }
             };
 
-            const deleteQuestion = async (id) => {
+            const handleFinishQuiz = async (finalScore) => {
+                setScore(finalScore);
+                setGameState('result');
+                
+                // Save Result to Firestore
+                if (user && selectedFile) {
+                    try {
+                        const resultsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
+                        await addDoc(resultsCol, {
+                            fileId: selectedFile.id,
+                            fileName: selectedFile.fileName,
+                            part: selectedPart,
+                            score: finalScore,
+                            total: activeQuestions.length,
+                            percentage: (finalScore / activeQuestions.length) * 100,
+                            timestamp: Date.now()
+                        });
+                    } catch (e) {
+                        console.error("Error saving result:", e);
+                    }
+                }
+            };
+
+            // Admin Functions
+            const addFileAndQuestions = async (fileName, part, newQuestions) => {
                 if (!user) return;
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
+                    // 1. Create File Doc
+                    const filesCol = collection(db, 'artifacts', appId, 'public', 'data', 'files');
+                    const fileRef = await addDoc(filesCol, {
+                        fileName,
+                        part,
+                        count: newQuestions.length,
+                        createdAt: Date.now()
+                    });
+
+                    // 2. Add Questions with fileId
+                    const questionsCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
+                    const batch = writeBatch(db);
+                    
+                    newQuestions.forEach((q) => {
+                        const newDocRef = doc(questionsCol); // Auto-ID
+                        batch.set(newDocRef, { ...q, fileId: fileRef.id });
+                    });
+
+                    await batch.commit();
+                    alert(`บันทึกไฟล์ "${fileName}" เรียบร้อยแล้ว (${newQuestions.length} ข้อ)`);
+                } catch (error) {
+                    alert("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+                }
+            };
+
+            const deleteFileAndQuestions = async (fileId) => {
+                if (!user) return;
+                try {
+                    // 1. Delete File Doc
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'files', fileId));
+                    
+                    // 2. Delete All Associated Questions (Query then Batch Delete)
+                    const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
+                    const qQuery = query(qCol, where('fileId', '==', fileId));
+                    const snapshot = await getDocs(qQuery);
+                    
+                    const batch = writeBatch(db);
+                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                    
+                    alert("ลบไฟล์และข้อสอบทั้งหมดเรียบร้อยแล้ว");
                 } catch (e) {
                     alert("ลบไม่สำเร็จ: " + e.message);
                 }
+            };
+            
+            const getQuestionsByFile = async (fileId) => {
+                 if (!user) return [];
+                 const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
+                 const qQuery = query(qCol, where('fileId', '==', fileId));
+                 const snapshot = await getDocs(qQuery);
+                 return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             };
 
             const updateQuestion = async (id, newData) => {
@@ -889,16 +1246,25 @@
                 }
             };
 
-            const handleSeedData = async () => {
-                if(confirm("โหลดข้อมูลตัวอย่าง?")) await addQuestionsToDB(INITIAL_QUESTIONS);
+            const deleteQuestion = async (id) => {
+                if (!user) return;
+                 try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
+                } catch (e) {
+                    alert("ลบไม่สำเร็จ: " + e.message);
+                }
             };
 
-            const questionCounts = { A: questions.filter(q => q.part === 'A').length, B: questions.filter(q => q.part === 'B').length };
-            
-            // Helper function to get part name safely
-            const getPartName = (part) => {
-                return part === 'A' ? "ภาค ก (ความรู้ทั่วไป)" : "ภาค ข (ความรู้เฉพาะตำแหน่ง)";
+            const handleSeedData = async () => {
+                if(confirm("โหลดข้อมูลตัวอย่าง?")) await addFileAndQuestions("แนวข้อสอบตัวอย่าง ชุดที่ 1", "A", INITIAL_QUESTIONS);
             };
+
+            const fileStats = { 
+                A: files.filter(f => f.part === 'A').length, 
+                B: files.filter(f => f.part === 'B').length 
+            };
+            
+            const getPartName = (part) => part === 'A' ? "ภาค ก (ความรู้ทั่วไป)" : "ภาค ข (ความรู้เฉพาะตำแหน่ง)";
 
             return (
                 <div>
@@ -906,19 +1272,32 @@
                     <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-200/40 via-purple-200/40 to-transparent -z-10 animate-pulse-slow"></div>
                     <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-200/40 via-cyan-200/40 to-transparent -z-10 animate-pulse-slow delay-1000"></div>
 
-                    {gameState === 'welcome' && <WelcomeScreen onSelectPart={handleSelectPart} goToAdmin={() => setGameState('admin')} questionCounts={questionCounts} isLoading={isLoading} authError={authError} />}
-                    {gameState === 'selection' && <SelectionScreen questions={partQuestions} onSelectSet={handleSelectSet} onBack={() => setGameState('welcome')} partName={getPartName(selectedPart)} />}
-                    {gameState === 'quiz' && <QuizScreen questions={activeQuestions} finishQuiz={(s) => { setScore(s); setGameState('result'); }} partName={getPartName(selectedPart)} goHome={() => setGameState('welcome')} />}
-                    {gameState === 'result' && <ResultScreen score={score} total={activeQuestions.length} restartQuiz={() => { setScore(0); setGameState('quiz'); }} goHome={() => { setGameState('welcome'); setSelectedPart(null); }} partName={getPartName(selectedPart)} />}
+                    {gameState === 'welcome' && (
+                        <WelcomeScreen 
+                            onSelectPart={handleSelectPart} 
+                            goToAdmin={() => setGameState('admin')} 
+                            goToSummary={() => setGameState('summary')}
+                            goToAnalysis={() => setGameState('analysis')}
+                            fileStats={fileStats} 
+                            isLoading={isLoading} 
+                            authError={authError} 
+                        />
+                    )}
+                    {gameState === 'summary' && <SummaryScreen onBack={() => setGameState('welcome')} />}
+                    {gameState === 'analysis' && <AnalysisScreen onBack={() => setGameState('welcome')} userResultStats={userResultStats} />}
+                    {gameState === 'selection' && <SelectionScreen files={files.filter(f => f.part === selectedPart)} onSelectFile={handleSelectFileForQuiz} onBack={() => setGameState('welcome')} partName={getPartName(selectedPart)} />}
+                    {gameState === 'quiz' && <QuizScreen questions={activeQuestions} finishQuiz={handleFinishQuiz} partName={getPartName(selectedPart)} fileName={selectedFile ? selectedFile.fileName : ''} goHome={() => setGameState('welcome')} isLoading={isLoading} />}
+                    {gameState === 'result' && <ResultScreen score={score} total={activeQuestions.length} restartQuiz={() => { setScore(0); setGameState('quiz'); }} goHome={() => { setGameState('welcome'); setSelectedPart(null); setSelectedFile(null); }} partName={getPartName(selectedPart)} />}
                     {gameState === 'admin' && (
                         <AdminScreen 
                             goBack={() => setGameState('welcome')} 
-                            onAddQuestions={addQuestionsToDB} 
-                            questions={questions}
+                            onAddFile={addFileAndQuestions} 
+                            files={files}
                             onSeedData={handleSeedData} 
-                            isSaving={isSaving}
-                            onDeleteQuestion={deleteQuestion}
+                            onDeleteFile={deleteFileAndQuestions}
                             onUpdateQuestion={updateQuestion}
+                            onDeleteQuestion={deleteQuestion}
+                            getQuestionsByFile={getQuestionsByFile}
                         />
                     )}
                 </div>
