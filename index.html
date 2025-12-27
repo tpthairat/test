@@ -72,16 +72,22 @@
                 firebaseConfig = JSON.parse(window.__firebase_config);
                 appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
             } else {
-                // Fallback Config from original code
+                // ==========================================
+                //  ส่วนแก้ไขค่า Config สำหรับรันบนเครื่องตัวเอง (Local)
+                // ==========================================
+                // 1. ไปที่ https://console.firebase.google.com/
+                // 2. สร้างโปรเจกต์ใหม่ -> Add app (Web)
+                // 3. ก๊อปปี้ค่า firebaseConfig มาแทนที่ด้านล่างนี้
+                // 4. ไปที่เมนู Build -> Authentication -> Get Started -> Sign-in method -> เปิดใช้งาน Anonymous
+                // 5. ไปที่เมนู Build -> Firestore Database -> Create database -> Start in Test mode
+                
                 firebaseConfig = {
-                    apiKey: "AIzaSyAa1BBpDBC88rmmrxoQ1FzaevgXjlbOZJ8",
-                    authDomain: "local-68-68d5c.firebaseapp.com",
-                    databaseURL: "https://local-68-68d5c-default-rtdb.firebaseio.com",
-                    projectId: "local-68-68d5c",
+                    apiKey: "AIzaSyAa1BBpDBC88rmmrxoQ1FzaevgXjlbOZJ8", // <--- ใส่ API Key ของคุณ
+                    authDomain: "local-68-68d5c.firebaseapp.com",    // <--- ใส่ Auth Domain ของคุณ
+                    projectId: "local-68-68d5c",                      // <--- ใส่ Project ID ของคุณ
                     storageBucket: "local-68-68d5c.firebasestorage.app",
                     messagingSenderId: "478841571906",
-                    appId: "1:478841571906:web:6cc77709f37b1b0274fbdb",
-                    measurementId: "G-JBDWTML70S"
+                    appId: "1:478841571906:web:6cc77709f37b1b0274fbdb"
                 };
                 appId = 'local-exam-app-v1';
             }
@@ -238,11 +244,24 @@
                             <p className="text-sm md:text-base">กำลังเชื่อมต่อฐานข้อมูล...</p>
                         </div>
                     ) : authError ? (
-                        <div className="mx-4 flex flex-col items-center justify-center text-red-500 bg-red-50 rounded-3xl p-6 border border-red-200 shadow-sm">
+                        <div className="mx-4 flex flex-col items-center justify-center text-red-500 bg-red-50 rounded-3xl p-6 border border-red-200 shadow-sm max-w-2xl mx-auto">
                             <Icons.AlertCircle size={40} className="mb-3 md:w-12 md:h-12" />
                             <h3 className="text-base md:text-lg font-bold">เกิดข้อผิดพลาดในการเชื่อมต่อ</h3>
-                            <p className="text-xs md:text-sm mb-2">{authError}</p>
-                            <p className="text-xs text-slate-500 mt-2">โปรดตรวจสอบการตั้งค่า Firebase</p>
+                            <p className="text-xs md:text-sm mb-2 font-mono bg-red-100/50 p-2 rounded">{authError}</p>
+                            
+                            {authError.includes('configuration-not-found') || authError.includes('API key') ? (
+                                <div className="mt-4 text-left text-xs text-slate-600 bg-white p-4 rounded-xl border border-red-100">
+                                    <p className="font-bold mb-2">วิธีแก้ไข (สำหรับรัน Local/Direct Web):</p>
+                                    <ol className="list-decimal pl-4 space-y-1">
+                                        <li>เปิดไฟล์ <code className="bg-slate-100 px-1 rounded">index.html</code> ด้วย Text Editor (เช่น Notepad)</li>
+                                        <li>ค้นหาบรรทัดที่มีคำว่า <code className="bg-slate-100 px-1 rounded">firebaseConfig</code></li>
+                                        <li>แทนที่ค่า API Key และอื่นๆ ด้วยค่าจากโปรเจกต์ Firebase ของคุณเอง</li>
+                                        <li>ตรวจสอบว่าใน Firebase Console เปิดใช้งาน <b>Anonymous Auth</b> แล้ว</li>
+                                    </ol>
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-500 mt-2">ระบบกำลังพยายามเชื่อมต่อใหม่...</p>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-3xl mx-auto w-full px-2 sm:px-4">
@@ -578,7 +597,12 @@
                         }
                     } catch (error) {
                         console.error("Auth error:", error);
-                        setAuthError(error.message);
+                        // Catch specific config errors to give better advice
+                        if (error.code === 'auth/configuration-not-found' || error.message.includes('configuration-not-found')) {
+                             setAuthError("ไม่พบการตั้งค่า Authentication (auth/configuration-not-found) - กรุณาตรวจสอบว่าเปิดใช้งาน Anonymous Auth ใน Firebase Console หรือยัง และค่า Config ถูกต้องหรือไม่");
+                        } else {
+                             setAuthError(error.message);
+                        }
                         setIsLoading(false);
                     }
                 };
@@ -606,7 +630,7 @@
                     setIsLoading(false);
                 }, (error) => {
                     console.error("Fetch error:", error);
-                    setAuthError("ไม่สามารถเข้าถึงฐานข้อมูลได้");
+                    setAuthError("ไม่สามารถเข้าถึงฐานข้อมูลได้ - ตรวจสอบว่าเปิด Firestore เป็น Test Mode หรือไม่");
                     setIsLoading(false);
                 });
                 return () => unsubscribe();
