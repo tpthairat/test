@@ -1059,7 +1059,6 @@
             const [isLoading, setIsLoading] = useState(true);
             const [authError, setAuthError] = useState(null);
             
-            // Initial Check for Firebase
             useEffect(() => {
                 if (window.FB) {
                     setIsReady(true);
@@ -1071,7 +1070,10 @@
             useEffect(() => {
                 if (!isReady) return;
                 
-                const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.FB;
+                const auth = window.FB.auth;
+                const signInAnonymously = window.FB.signInAnonymously;
+                const signInWithCustomToken = window.FB.signInWithCustomToken;
+                const onAuthStateChanged = window.FB.onAuthStateChanged;
 
                 const initAuth = async () => {
                     try {
@@ -1097,13 +1099,18 @@
             // Fetch Files
             useEffect(() => {
                 if (!user || !isReady) return;
-                const { db, collection, query, onSnapshot, orderBy, appId } = window.FB;
+                const db = window.FB.db;
+                const collection = window.FB.collection;
+                const query = window.FB.query;
+                const onSnapshot = window.FB.onSnapshot;
+                const orderBy = window.FB.orderBy;
+                const appId = window.FB.appId;
                 
                 const filesPath = collection(db, 'artifacts', appId, 'public', 'data', 'files');
                 const filesQuery = query(filesPath, orderBy('createdAt', 'desc'));
                 
                 const unsubscribe = onSnapshot(filesQuery, (snapshot) => {
-                    const loadedFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const loadedFiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setFiles(loadedFiles);
                     setIsLoading(false);
                 }, (error) => {
@@ -1116,13 +1123,18 @@
             // Fetch User Results
             useEffect(() => {
                 if (!user || !isReady) return;
-                const { db, collection, query, onSnapshot, orderBy, appId } = window.FB;
+                const db = window.FB.db;
+                const collection = window.FB.collection;
+                const query = window.FB.query;
+                const onSnapshot = window.FB.onSnapshot;
+                const orderBy = window.FB.orderBy;
+                const appId = window.FB.appId;
 
                 const resultsPath = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
                 const resultsQuery = query(resultsPath, orderBy('timestamp', 'desc'));
 
                 const unsubscribe = onSnapshot(resultsQuery, (snapshot) => {
-                    const history = snapshot.docs.map(doc => doc.data());
+                    const history = snapshot.docs.map(d => d.data());
                     if (history.length > 0) {
                         const totalExams = history.length;
                         const totalScorePercentage = history.reduce((sum, res) => sum + res.percentage, 0);
@@ -1145,14 +1157,20 @@
 
             const handleSelectFileForQuiz = async (file) => {
                 if (!isReady) return;
-                const { db, collection, query, where, getDocs, appId } = window.FB;
+                const db = window.FB.db;
+                const collection = window.FB.collection;
+                const query = window.FB.query;
+                const where = window.FB.where;
+                const getDocs = window.FB.getDocs;
+                const appId = window.FB.appId;
+
                 setSelectedFile(file);
                 setIsLoading(true);
                 try {
                     const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                     const qQuery = query(qCol, where('fileId', '==', file.id));
                     const snapshot = await getDocs(qQuery);
-                    const loadedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const loadedQuestions = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setActiveQuestions(loadedQuestions);
                     setScore(0);
                     setGameState('quiz');
@@ -1167,7 +1185,10 @@
                 setScore(finalScore);
                 setGameState('result');
                 if (user && selectedFile && isReady) {
-                    const { db, collection, addDoc, appId } = window.FB;
+                    const db = window.FB.db;
+                    const collection = window.FB.collection;
+                    const addDoc = window.FB.addDoc;
+                    const appId = window.FB.appId;
                     try {
                         const resultsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'results');
                         await addDoc(resultsCol, {
@@ -1188,7 +1209,13 @@
             // Admin Functions
             const addFileAndQuestions = async (fileName, part, newQuestions) => {
                 if (!user || !isReady) return;
-                const { db, collection, addDoc, writeBatch, doc, appId } = window.FB;
+                const db = window.FB.db;
+                const collection = window.FB.collection;
+                const addDoc = window.FB.addDoc;
+                const writeBatch = window.FB.writeBatch;
+                const docFn = window.FB.doc;
+                const appId = window.FB.appId;
+
                 try {
                     const filesCol = collection(db, 'artifacts', appId, 'public', 'data', 'files');
                     const fileRef = await addDoc(filesCol, {
@@ -1202,7 +1229,7 @@
                     const batch = writeBatch(db);
                     
                     newQuestions.forEach((q) => {
-                        const newDocRef = doc(questionsCol);
+                        const newDocRef = docFn(questionsCol);
                         batch.set(newDocRef, Object.assign({}, q, { fileId: fileRef.id }));
                     });
 
@@ -1215,16 +1242,25 @@
 
             const deleteFileAndQuestions = async (fileId) => {
                 if (!user || !isReady) return;
-                const { db, doc, deleteDoc, collection, query, where, getDocs, writeBatch, appId } = window.FB;
+                const db = window.FB.db;
+                const docFn = window.FB.doc;
+                const deleteDoc = window.FB.deleteDoc;
+                const collection = window.FB.collection;
+                const query = window.FB.query;
+                const where = window.FB.where;
+                const getDocs = window.FB.getDocs;
+                const writeBatch = window.FB.writeBatch;
+                const appId = window.FB.appId;
+
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'files', fileId));
+                    await deleteDoc(docFn(db, 'artifacts', appId, 'public', 'data', 'files', fileId));
                     
                     const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                     const qQuery = query(qCol, where('fileId', '==', fileId));
                     const snapshot = await getDocs(qQuery);
                     
                     const batch = writeBatch(db);
-                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    snapshot.forEach(d => batch.delete(d.ref));
                     await batch.commit();
                     
                     alert("ลบไฟล์และข้อสอบทั้งหมดเรียบร้อยแล้ว");
@@ -1235,18 +1271,28 @@
             
             const getQuestionsByFile = async (fileId) => {
                  if (!user || !isReady) return [];
-                 const { db, collection, query, where, getDocs, appId } = window.FB;
+                 const db = window.FB.db;
+                 const collection = window.FB.collection;
+                 const query = window.FB.query;
+                 const where = window.FB.where;
+                 const getDocs = window.FB.getDocs;
+                 const appId = window.FB.appId;
+
                  const qCol = collection(db, 'artifacts', appId, 'public', 'data', 'questions');
                  const qQuery = query(qCol, where('fileId', '==', fileId));
                  const snapshot = await getDocs(qQuery);
-                 return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                 return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             };
 
             const updateQuestion = async (id, newData) => {
                 if (!user || !isReady) return;
-                const { db, doc, updateDoc, appId } = window.FB;
+                const db = window.FB.db;
+                const docFn = window.FB.doc;
+                const updateDoc = window.FB.updateDoc;
+                const appId = window.FB.appId;
+
                 try {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id), newData);
+                    await updateDoc(docFn(db, 'artifacts', appId, 'public', 'data', 'questions', id), newData);
                 } catch (e) {
                     alert("แก้ไขไม่สำเร็จ: " + e.message);
                 }
@@ -1254,9 +1300,13 @@
 
             const deleteQuestion = async (id) => {
                 if (!user || !isReady) return;
-                const { db, doc, deleteDoc, appId } = window.FB;
+                const db = window.FB.db;
+                const docFn = window.FB.doc;
+                const deleteDoc = window.FB.deleteDoc;
+                const appId = window.FB.appId;
+
                  try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
+                    await deleteDoc(docFn(db, 'artifacts', appId, 'public', 'data', 'questions', id));
                 } catch (e) {
                     alert("ลบไม่สำเร็จ: " + e.message);
                 }
