@@ -2,931 +2,117 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>แนวข้อสอบข้าราชการท้องถิ่น (Direct Web)</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนกองทุนฯ</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        /* Custom Animations */
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes pulseSlow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
-        
-        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-pop-in { animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-pulse-slow { animation: pulseSlow 8s ease-in-out infinite; }
-        
-        /* Safe Area for Mobile */
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 20px); }
-        
-        /* Hide Scrollbar but keep functionality */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { font-family: 'Sarabun', sans-serif; padding: 20px; background-color: #f8f9fa; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        input { width: 100%; padding: 12px; margin: 8px 0; display: inline-block; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; background-color: #06C755; color: white; padding: 14px 20px; margin: 8px 0; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #05ac4a; }
+        .hidden { display: none; }
+        #loading { text-align: center; margin-top: 50px; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900 overflow-hidden fixed inset-0">
-    <div id="root" class="h-full overflow-y-auto"></div>
+<body>
 
-    <!-- Firebase Setup -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, getDoc, deleteDoc, updateDoc, where, getDocs, writeBatch, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    <div id="loading">กำลังโหลดข้อมูล LINE...</div>
 
-        let firebaseConfig;
-        let appId = 'default-app-id';
+    <div id="registrationForm" class="container hidden">
+        <h2>ลงทะเบียนรับแจ้งเตือน</h2>
+        <p style="text-align:center; color:gray; font-size:14px;">กรุณากรอกข้อมูลให้ตรงกับที่ให้ไว้กับกองทุน</p>
         
-        try {
-            if (typeof window.__firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(window.__firebase_config);
-                if (typeof window.__app_id !== 'undefined') appId = window.__app_id;
-            } else {
-                // Fallback Config
-                firebaseConfig = {
-                    apiKey: "AIzaSyAa1BBpDBC88rmmrxoQ1FzaevgXjlbOZJ8", 
-                    authDomain: "local-68-68d5c.firebaseapp.com",    
-                    projectId: "local-68-68d5c"
-                };
-                appId = 'local-exam-app-v1';
-            }
-        } catch (e) { console.warn("Config warning"); }
+        <label>ชื่อจริง</label>
+        <input type="text" id="firstName" placeholder="เช่น สมชาย (ไม่ต้องใส่คำนำหน้า)">
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        <label>นามสกุล</label>
+        <input type="text" id="lastName" placeholder="เช่น ใจดี">
 
-        window.FB = {
-            auth, db, appId,
-            signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, getDocs, writeBatch, orderBy, serverTimestamp
-        };
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
+        <label>เบอร์โทรศัพท์</label>
+        <input type="tel" id="phone" placeholder="เช่น 0812345678">
 
-    <!-- React Application -->
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        <button onclick="saveData()">ยืนยันการลงทะเบียน</button>
+    </div>
 
-        // --- COMPLETE ICONS DEFINITION ---
-        const IconBase = ({ children, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-        );
+    <script>
+        // ================== ส่วนที่ 1: แก้ไข Config ตรงนี้ ==================
         
-        const Icons = {
-            // General
-            Book: (p) => <IconBase {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></IconBase>,
-            Settings: (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>,
-            Home: (p) => <IconBase {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconBase>,
-            Info: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>,
-            Loader: (p) => <IconBase {...p} className={`animate-spin ${p.className || ''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></IconBase>,
-            Lock: (p) => <IconBase {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>,
-            LogOut: (p) => <IconBase {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></IconBase>,
+        // 1. ใส่ LIFF ID ของคุณ (ที่ได้จาก LINE Developers)
+        const MY_LIFF_ID = "2008738107-zlpwNIh7"; 
 
-            // Navigation
-            ArrowLeft: (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconBase>,
-            ArrowRight: (p) => <IconBase {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconBase>,
-            ChevronRight: (p) => <IconBase {...p}><path d="m9 18 6-6-6-6"/></IconBase>,
-            ChevronDown: (p) => <IconBase {...p}><path d="m6 9 6 6 6-6"/></IconBase>,
-            Maximize: (p) => <IconBase {...p}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></IconBase>,
-
-            // Subjects & Categories
-            Check: (p) => <IconBase {...p}><polyline points="20 6 9 17 4 12"/></IconBase>,
-            Briefcase: (p) => <IconBase {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></IconBase>,
-            GraduationCap: (p) => <IconBase {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>,
-            FileText: (p) => <IconBase {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></IconBase>,
-            BarChart: (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
-            Chart: (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>,
-            BookOpen: (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>,
-            Link: (p) => <IconBase {...p}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></IconBase>,
-
-            // Quiz & Results
-            Clock: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>,
-            CheckCircle: (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>,
-            XCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>,
-            Lightbulb: (p) => <IconBase {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-3.2-2.8-5-6-5.6-2.6-.5-5.3 1.1-6 3.6-.5 1.7 0 3.5 1.3 4.8.8.8 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></IconBase>,
-            Trophy: (p) => <IconBase {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2h-6c-2 0-3 1-3 3v4c0 3 2 5 5 6h.5c3 0 5-2 5-6V5c0-2-1-3-3-3z"/></IconBase>,
-            Frown: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></IconBase>,
-            RotateCcw: (p) => <IconBase {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>,
-            TrendingUp: (p) => <IconBase {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></IconBase>,
-            PieChart: (p) => <IconBase {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></IconBase>,
-
-            // Admin Actions
-            Trash: (p) => <IconBase {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconBase>,
-            Edit: (p) => <IconBase {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></IconBase>,
-            Upload: (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></IconBase>,
-            UploadCloud: (p) => <IconBase {...p}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></IconBase>,
-            Save: (p) => <IconBase {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>,
-            List: (p) => <IconBase {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></IconBase>,
-            Refresh: (p) => <IconBase {...p}><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></IconBase>,
-            AlertCircle: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>
+        // 2. ใส่ Firebase Config (ดูวิธีหาด้านล่าง)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCM0DDqCynN2aq12oW-mSs8KOH56ULsWRk",
+  authDomain: "fun99-fc605.firebaseapp.com",
+  databaseURL: "https://fun99-fc605-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "fun99-fc605",
+  storageBucket: "fun99-fc605.firebasestorage.app",
+  messagingSenderId: "962376562614",
+  appId: "1:962376562614:web:0b363cbbf604a3a1b13317",
         };
 
-        const INITIAL_QUESTIONS = [
-            { category: "ทั่วไป", question: "1+1=?", options: ["1","2","3","4"], correctAnswer: 1, explanation: "ง่ายๆ" }
-        ];
+        // ================== จบส่วนแก้ไข ==================
 
-        const SUMMARIES = [
-            {
-                id: 1,
-                title: "สรุปสูตรคณิตศาสตร์ (อนุกรม)",
-                category: "ภาค ก",
-                content: `<h4 class="font-bold text-lg mb-2 text-slate-800">1. อนุกรมเพิ่มคงที่</h4><p class="mb-4 text-slate-600">คือการบวกด้วยเลขเดิมซ้ำๆ เช่น 2, 4, 6, 8 (บวกทีละ 2)</p><h4 class="font-bold text-lg mb-2 text-slate-800">2. อนุกรมเพิ่มแบบมีลำดับ</h4><p class="mb-4 text-slate-600">การบวกที่ตัวบวกเพิ่มขึ้นเรื่อยๆ เช่น 2, 5, 10, 17 (+3, +5, +7)</p>`
-            },
-            {
-                id: 2,
-                title: "คำราชาศัพท์ที่ควรรู้",
-                category: "ภาค ก",
-                content: `<ul class="list-disc pl-5 space-y-2 text-slate-600"><li><b>พระอัยกา</b> = ปู่, ตา</li><li><b>พระอัยกี</b> = ย่า, ยาย</li><li><b>พระชนก</b> = พ่อ</li></ul>`
-            },
-            {
-                id: 3,
-                title: "สรุปงานสารบรรณ (ฉบับย่อ)",
-                category: "ภาค ข",
-                content: `<div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><b class="text-yellow-800">หนังสือราชการมี 6 ชนิด</b><ol class="list-decimal pl-5 mt-2 space-y-1 text-slate-700"><li>หนังสือภายนอก</li><li>หนังสือภายใน</li><li>หนังสือประทับตรา</li><li>หนังสือสั่งการ</li><li>หนังสือประชาสัมพันธ์</li><li>หนังสือที่เจ้าหน้าที่ทำขึ้นหรือรับไว้</li></ol></div>`
-            }
-        ];
+        // เริ่มต้นระบบ
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
 
-        const parseCSV = (text) => {
-            const lines = text.split('\n');
-            const result = [];
-            const startRow = lines[0].toLowerCase().includes('question') ? 1 : 0;
-            for (let i = startRow; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-                const clean = (str) => str ? str.replace(/^"|"$/g, '').trim() : "";
-                if (parts.length >= 7) {
-                    result.push({
-                        category: parts.length >= 9 ? clean(parts[1]) : 'ทั่วไป', 
-                        question: clean(parts.length >= 9 ? parts[2] : parts[0]),
-                        options: [
-                            clean(parts.length >= 9 ? parts[3] : parts[1]), 
-                            clean(parts.length >= 9 ? parts[4] : parts[2]), 
-                            clean(parts.length >= 9 ? parts[5] : parts[3]), 
-                            clean(parts.length >= 9 ? parts[6] : parts[4])
-                        ],
-                        correctAnswer: parseInt(clean(parts.length >= 9 ? parts[7] : parts[5])) - 1, 
-                        explanation: clean(parts.length >= 9 ? parts[8] : parts[6]),
-                        createdAt: Date.now() + i
-                    });
+        // ทำงานทันทีเมื่อเปิดเว็บ
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('registrationForm').classList.remove('hidden');
                 }
+            } catch (err) {
+                alert("เกิดข้อผิดพลาด LIFF: " + err);
             }
-            return result;
-        };
+        }
+        main();
 
-        // --- COMPONENTS ---
+        // ฟังก์ชันบันทึกข้อมูล
+        function saveData() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
 
-        const AdminLoginModal = ({ onLogin, onCancel }) => {
-            const [password, setPassword] = useState("");
-            const inputRef = useRef(null);
-
-            useEffect(() => {
-                if(inputRef.current) inputRef.current.focus();
-            }, []);
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                onLogin(password);
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-pop-in">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm border border-slate-100">
-                        <div className="flex justify-center mb-6">
-                            <div className="p-4 bg-slate-100 rounded-full text-slate-500">
-                                <Icons.Lock size={32} />
-                            </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-center text-slate-800 mb-2">ผู้ดูแลระบบ</h3>
-                        <p className="text-slate-500 text-center mb-6 text-sm">กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ</p>
-                        
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <input 
-                                type="password" 
-                                ref={inputRef}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full text-center text-xl tracking-widest p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-colors"
-                                placeholder="••••"
-                                maxLength="4"
-                            />
-                            <div className="grid grid-cols-2 gap-3 pt-2">
-                                <button type="button" onClick={onCancel} className="py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors">ยกเลิก</button>
-                                <button type="submit" className="py-2.5 rounded-xl bg-slate-800 text-white font-bold hover:bg-slate-900 transition-colors shadow-lg shadow-slate-200">เข้าสู่ระบบ</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        const AdminScreen = ({ goBack, user, onLogout }) => {
-            const [view, setView] = useState('files');
-            const [files, setFiles] = useState([]);
-            const [summaries, setSummaries] = useState([]);
-            const [questions, setQuestions] = useState([]);
-            const [selectedFile, setSelectedFile] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const [adminTab, setAdminTab] = useState('files'); // 'files' or 'summaries'
-            
-            // Import Files State
-            const [fileName, setFileName] = useState("");
-            const [importPart, setImportPart] = useState("A");
-            const [csvData, setCsvData] = useState([]);
-            const fileInputRef = useRef(null);
-
-            // Add Summary State
-            const [summaryTitle, setSummaryTitle] = useState("");
-            const [summaryLink, setSummaryLink] = useState("");
-            const [summaryPart, setSummaryPart] = useState("A");
-
-            // Auto-generate name effect
-            useEffect(() => {
-                const partFiles = files.filter(f => f.part === importPart);
-                const nextNum = partFiles.length + 1;
-                setFileName(`ชุดข้อสอบที่ ${nextNum}`);
-            }, [files, importPart]);
-
-            useEffect(() => {
-                if (!window.FB) return;
-                const { db, collection, query, orderBy, onSnapshot, appId } = window.FB;
-                
-                // Fetch Exam Files
-                const qFiles = query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc'));
-                const unsubFiles = onSnapshot(qFiles, (snap) => setFiles(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-
-                // Fetch Summaries
-                const qSums = query(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), orderBy('createdAt', 'desc'));
-                const unsubSums = onSnapshot(qSums, (snap) => setSummaries(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-
-                return () => { unsubFiles(); unsubSums(); };
-            }, []);
-
-            const fetchQuestions = async (file) => {
-                setLoading(true);
-                setSelectedFile(file);
-                const { db, collection, query, where, getDocs, appId } = window.FB;
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), where('fileId', '==', file.id));
-                const snap = await getDocs(q);
-                setQuestions(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                setLoading(false);
-                setView('questions');
-            };
-
-            const handleFileSelect = (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                // Removed manual filename override to preserve auto-generation
-                const reader = new FileReader();
-                reader.onload = (evt) => setCsvData(parseCSV(evt.target.result));
-                reader.readAsText(file);
-            };
-
-            const saveFile = async () => {
-                if(!fileName || csvData.length === 0) return alert("กรุณาเลือกไฟล์และตั้งชื่อ");
-                setLoading(true);
-                const { db, collection, addDoc, writeBatch, doc, appId } = window.FB;
-                try {
-                    const fileRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'files'), {
-                        fileName, part: importPart, count: csvData.length, createdAt: Date.now()
-                    });
-                    const batch = writeBatch(db);
-                    csvData.forEach(q => {
-                        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'questions'));
-                        batch.set(ref, { ...q, fileId: fileRef.id, part: importPart });
-                    });
-                    await batch.commit();
-                    alert("บันทึกสำเร็จ");
-                    setCsvData([]); 
-                    if(fileInputRef.current) fileInputRef.current.value="";
-                } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
-                setLoading(false);
-            };
-
-            const saveSummary = async () => {
-                if(!summaryTitle || !summaryLink) return alert("กรุณากรอกชื่อหัวข้อและลิงก์");
-                setLoading(true);
-                const { db, collection, addDoc, appId } = window.FB;
-                try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), {
-                        title: summaryTitle,
-                        link: summaryLink,
-                        category: summaryPart === 'A' ? 'ภาค ก' : 'ภาค ข',
-                        createdAt: Date.now()
-                    });
-                    alert("บันทึกสรุปเนื้อหาสำเร็จ");
-                    setSummaryTitle(""); setSummaryLink("");
-                } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
-                setLoading(false);
-            };
-
-            const deleteFile = async (file) => {
-                if(!confirm("ลบไฟล์และข้อสอบทั้งหมด?")) return;
-                const { db, doc, deleteDoc, collection, query, where, getDocs, writeBatch, appId } = window.FB;
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'files', file.id));
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), where('fileId', '==', file.id));
-                const snap = await getDocs(q);
-                const batch = writeBatch(db);
-                snap.forEach(s => batch.delete(s.ref));
-                await batch.commit();
-            };
-
-            const deleteSummary = async (id) => {
-                if(!confirm("ลบสรุปเนื้อหานี้?")) return;
-                const { db, doc, deleteDoc, appId } = window.FB;
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'summaries', id));
-            };
-
-            const deleteQuestion = async (qid) => {
-                if(!confirm("ลบข้อสอบข้อนี้?")) return;
-                const { db, doc, deleteDoc, appId } = window.FB;
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', qid));
-                setQuestions(prev => prev.filter(p => p.id !== qid));
-            };
-
-            if (view === 'questions') {
-                return (
-                    <div className="p-4 max-w-4xl mx-auto">
-                        <div className="flex items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow">
-                            <button onClick={() => setView('files')} className="p-2 hover:bg-slate-100 rounded-full"><Icons.ArrowLeft/></button>
-                            <h2 className="text-xl font-bold">แก้ไข: {selectedFile ? selectedFile.fileName : ''}</h2>
-                        </div>
-                        {loading ? <div className="text-center p-10"><Icons.Loader/></div> : (
-                            <div className="bg-white rounded-xl shadow overflow-hidden">
-                                {questions.map((q, i) => (
-                                    <div key={q.id} className="p-4 border-b hover:bg-slate-50 flex justify-between items-start">
-                                        <div>
-                                            <span className="font-bold text-blue-600 mr-2">ข้อ {i+1}</span>
-                                            {q.question}
-                                            <div className="text-xs text-slate-400 mt-1">{q.category}</div>
-                                        </div>
-                                        <button onClick={() => deleteQuestion(q.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Icons.Trash/></button>
-                                    </div>
-                                ))}
-                                {questions.length === 0 && <div className="p-8 text-center text-slate-400">ไม่มีข้อสอบในไฟล์นี้</div>}
-                            </div>
-                        )}
-                    </div>
-                );
+            if (!firstName || !lastName || !phone) {
+                alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+                return;
             }
 
-            return (
-                <div className="p-4 max-w-4xl mx-auto pb-20">
-                    <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow">
-                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Settings/> ระบบจัดการ</h2>
-                        <div className="flex gap-2">
-                             <button onClick={onLogout} className="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 font-bold flex items-center gap-2"><Icons.LogOut size={16}/> Log Out</button>
-                             <button onClick={goBack} className="text-sm bg-slate-100 px-4 py-2 rounded-lg hover:bg-slate-200">กลับหน้าหลัก</button>
-                        </div>
-                    </div>
+            liff.getProfile().then(profile => {
+                const userId = profile.userId; // นี่คือ Key สำคัญ!
 
-                    {/* Admin Tabs */}
-                    <div className="flex gap-4 mb-6">
-                        <button onClick={() => setAdminTab('files')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${adminTab === 'files' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
-                            จัดการข้อสอบ
-                        </button>
-                        <button onClick={() => setAdminTab('summaries')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${adminTab === 'summaries' ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
-                            จัดการสรุปเนื้อหา
-                        </button>
-                    </div>
-
-                    {adminTab === 'files' ? (
-                        <div>
-                            <div className="bg-white p-6 rounded-xl shadow mb-6">
-                                <h3 className="font-bold mb-4 flex gap-2"><Icons.Upload/> นำเข้าไฟล์ใหม่ (CSV)</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <input value={fileName} onChange={e=>setFileName(e.target.value)} className="border p-3 rounded-xl w-full text-base" placeholder="ชื่อชุดข้อสอบ (เช่น ก.พ. 66)" />
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setImportPart('A')} className={`flex-1 p-2 rounded-xl border font-bold ${importPart==='A'?'bg-blue-100 border-blue-500 text-blue-700':'bg-white text-slate-500'}`}>ภาค ก</button>
-                                        <button onClick={()=>setImportPart('B')} className={`flex-1 p-2 rounded-xl border font-bold ${importPart==='B'?'bg-purple-100 border-purple-500 text-purple-700':'bg-white text-slate-500'}`}>ภาค ข</button>
-                                    </div>
-                                </div>
-                                <input type="file" accept=".csv" onChange={handleFileSelect} ref={fileInputRef} className="block w-full text-base text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
-                                
-                                {csvData.length > 0 && (
-                                    <div className="mt-4 flex justify-between items-center bg-green-50 p-4 rounded-xl text-green-800">
-                                        <span>พร้อมบันทึก {csvData.length} ข้อ</span>
-                                        <button onClick={saveFile} disabled={loading} className="bg-green-600 text-white px-6 py-2 rounded-lg shadow hover:bg-green-700 disabled:opacity-50">{loading ? 'กำลังบันทึก...' : 'ยืนยัน'}</button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow overflow-hidden">
-                                <div className="p-4 bg-slate-50 border-b font-bold text-slate-600">รายการไฟล์ที่มี ({files.length})</div>
-                                {files.length === 0 ? <div className="p-10 text-center text-slate-400">ยังไม่มีไฟล์</div> : (
-                                    <table className="w-full text-left">
-                                        <thead className="text-xs text-slate-500 bg-slate-50 border-b">
-                                            <tr><th className="p-4">ชื่อไฟล์</th><th className="p-4">หมวด</th><th className="p-4">จำนวน</th><th className="p-4 text-right">จัดการ</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {files.map(f => (
-                                                <tr key={f.id} className="border-b hover:bg-slate-50">
-                                                    <td className="p-4 font-bold text-slate-700">{f.fileName}</td>
-                                                    <td className="p-4"><span className={`text-xs px-2 py-1 rounded font-bold ${f.part==='A'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>ภาค {f.part}</span></td>
-                                                    <td className="p-4 text-sm text-slate-500">{f.count} ข้อ</td>
-                                                    <td className="p-4 text-right space-x-2">
-                                                        <button onClick={()=>fetchQuestions(f)} className="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100"><Icons.Edit/></button>
-                                                        <button onClick={()=>deleteFile(f)} className="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100"><Icons.Trash/></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            {/* Summary Management */}
-                            <div className="bg-white p-6 rounded-xl shadow mb-6">
-                                <h3 className="font-bold mb-4 flex gap-2 text-orange-600"><Icons.Link/> เพิ่มสรุปเนื้อหาใหม่</h3>
-                                <div className="space-y-4">
-                                    <input value={summaryTitle} onChange={e=>setSummaryTitle(e.target.value)} className="border p-3 rounded-xl w-full text-base" placeholder="ชื่อหัวข้อสรุป (เช่น สรุปสูตรคณิตศาสตร์)" />
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <input value={summaryLink} onChange={e=>setSummaryLink(e.target.value)} className="border p-3 rounded-xl w-full text-base" placeholder="วางลิงก์ไฟล์ (URL)" />
-                                            <p className="text-xs text-slate-400 mt-1">*รองรับลิงก์ Google Drive, PDF หรือหน้าเว็บที่อนุญาตให้ฝัง (Embed)</p>
-                                        </div>
-                                        <div className="w-1/3 flex gap-2">
-                                            <button onClick={()=>setSummaryPart('A')} className={`flex-1 rounded-xl border font-bold ${summaryPart==='A'?'bg-blue-100 border-blue-500 text-blue-700':'bg-white text-slate-500'}`}>ภาค ก</button>
-                                            <button onClick={()=>setSummaryPart('B')} className={`flex-1 rounded-xl border font-bold ${summaryPart==='B'?'bg-purple-100 border-purple-500 text-purple-700':'bg-white text-slate-500'}`}>ภาค ข</button>
-                                        </div>
-                                    </div>
-                                    <button onClick={saveSummary} disabled={loading} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50">{loading ? 'กำลังบันทึก...' : 'เพิ่มรายการ'}</button>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow overflow-hidden">
-                                <div className="p-4 bg-slate-50 border-b font-bold text-slate-600">รายการสรุปเนื้อหา ({summaries.length})</div>
-                                {summaries.length === 0 ? <div className="p-10 text-center text-slate-400">ยังไม่มีข้อมูล</div> : (
-                                    <table className="w-full text-left">
-                                        <thead className="text-xs text-slate-500 bg-slate-50 border-b">
-                                            <tr><th className="p-4">หัวข้อ</th><th className="p-4">หมวด</th><th className="p-4">วันที่สร้าง</th><th className="p-4 text-right">จัดการ</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {summaries.map(s => (
-                                                <tr key={s.id} className="border-b hover:bg-slate-50">
-                                                    <td className="p-4 font-bold text-slate-700 max-w-xs truncate">{s.title}</td>
-                                                    <td className="p-4"><span className={`text-xs px-2 py-1 rounded font-bold ${s.category==='ภาค ก'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}`}>{s.category}</span></td>
-                                                    <td className="p-4 text-sm text-slate-500">{new Date(s.createdAt).toLocaleDateString('th-TH')}</td>
-                                                    <td className="p-4 text-right">
-                                                        <button onClick={()=>deleteSummary(s.id)} className="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100"><Icons.Trash size={16}/></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const QuizDisplay = ({ questions, onFinish, onHome }) => {
-            const [idx, setIdx] = useState(0);
-            const [score, setScore] = useState(0);
-            const [selected, setSelected] = useState(null);
-            
-            // --- Timer Logic ---
-            const [timeLeft, setTimeLeft] = useState(questions.length * 60); // 1 minute per question
-            const scoreRef = useRef(score); // Keep track of score for auto-submit
-
-            useEffect(() => { scoreRef.current = score; }, [score]);
-
-            useEffect(() => {
-                const timer = setInterval(() => {
-                    setTimeLeft((prev) => {
-                        if (prev <= 1) {
-                            clearInterval(timer);
-                            // Auto finish when time is up
-                            onFinish(scoreRef.current + (selected === questions[idx].correctAnswer ? 1 : 0)); 
-                            return 0;
-                        }
-                        return prev - 1;
-                    });
-                }, 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            const formatTime = (s) => {
-                const m = Math.floor(s / 60);
-                const sec = s % 60;
-                return `${m}:${sec < 10 ? '0' : ''}${sec}`;
-            };
-            // -------------------
-
-            const handleAns = (i) => {
-                if(selected !== null) return;
-                setSelected(i);
-                if(i === questions[idx].correctAnswer) setScore(s=>s+1);
-            };
-
-            const next = () => {
-                if(idx + 1 < questions.length) {
-                    setIdx(i=>i+1);
-                    setSelected(null);
-                } else {
-                    onFinish(score + (selected === questions[idx].correctAnswer ? 0 : 0));
-                }
-            };
-
-            const q = questions[idx];
-            const letters = ["A", "B", "C", "D"];
-
-            return (
-                <div className="h-screen flex flex-col bg-slate-50">
-                    <div className="px-4 py-3 bg-white shadow-sm z-20 flex justify-between items-center sticky top-0">
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-bold text-slate-700 text-lg">ข้อ {idx+1}</span>
-                            <span className="text-sm text-slate-400 font-medium">/ {questions.length}</span>
-                        </div>
-
-                        {/* Timer Display */}
-                        <div className={`flex items-center gap-2 font-mono font-bold px-3 py-1 rounded-lg border text-sm md:text-base ${timeLeft < 60 ? 'bg-red-50 text-red-500 border-red-100 animate-pulse' : 'bg-slate-50 text-slate-700 border-slate-100'}`}>
-                            <Icons.Clock size={16} />
-                            {formatTime(timeLeft)}
-                        </div>
-
-                        <button onClick={()=>{ if(confirm('ออกจากการสอบ?')) onHome(); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"><Icons.Home/></button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 w-full max-w-2xl mx-auto">
-                        <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-slate-100">
-                            <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full mb-3">{q.category}</div>
-                            <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-6 leading-relaxed">{q.question}</h2>
-                            
-                            <div className="space-y-3">
-                                {q.options.map((opt, i) => (
-                                    <button 
-                                        key={i} 
-                                        onClick={()=>handleAns(i)}
-                                        className={`w-full p-4 rounded-2xl text-left border-2 transition-all duration-200 flex items-start gap-3 active:scale-[0.98] ${
-                                            selected === null 
-                                                ? 'border-slate-100 hover:border-blue-200 bg-white text-slate-700' 
-                                                : i === q.correctAnswer 
-                                                    ? 'border-green-500 bg-green-50 text-green-800' 
-                                                    : selected === i 
-                                                        ? 'border-red-500 bg-red-50 text-red-800' 
-                                                        : 'border-slate-100 opacity-50 grayscale'
-                                        }`}
-                                    >
-                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border ${
-                                            selected === null 
-                                                ? 'bg-slate-100 text-slate-500 border-slate-200' 
-                                                : i === q.correctAnswer 
-                                                    ? 'bg-green-200 text-green-700 border-green-300' 
-                                                    : selected === i 
-                                                        ? 'bg-red-200 text-red-700 border-red-300' 
-                                                        : 'bg-slate-100 text-slate-400 border-slate-200'
-                                        }`}>
-                                            {letters[i] || i+1}
-                                        </div>
-                                        <span className="mt-0.5 text-base md:text-lg font-medium">{opt}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {selected !== null && (
-                                <div className="mt-6 p-5 bg-blue-50/50 rounded-2xl border border-blue-100 animate-slide-up">
-                                    <div className="flex items-center gap-2 font-bold text-blue-700 mb-2">
-                                        <Icons.Lightbulb size={18}/> คำอธิบาย
-                                    </div>
-                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed">{q.explanation}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-white border-t border-slate-100 z-20 sticky bottom-0 safe-area-pb">
-                        <div className="max-w-2xl mx-auto">
-                            <button 
-                                onClick={next} 
-                                disabled={selected===null} 
-                                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:shadow-none hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                            >
-                                {idx+1 === questions.length ? 'ส่งคำตอบ' : 'ข้อถัดไป'} 
-                                <Icons.ArrowRight size={20}/>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const MainApp = () => {
-            const [page, setPage] = useState('home'); 
-            const [user, setUser] = useState(null);
-            const [files, setFiles] = useState([]);
-            const [summaries, setSummaries] = useState([]);
-            const [selectedPart, setSelectedPart] = useState(null);
-            const [quizQuestions, setQuizQuestions] = useState([]);
-            const [score, setScore] = useState(0);
-            const [ready, setReady] = useState(false);
-            const [loadingQuiz, setLoadingQuiz] = useState(false);
-            const [results, setResults] = useState([]);
-            const [openSummaryId, setOpenSummaryId] = useState(null);
-            const [showAdminLogin, setShowAdminLogin] = useState(false);
-            const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-
-            useEffect(() => {
-                const checkFB = () => {
-                    if(window.FB) {
-                        setReady(true);
-                        const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.FB;
-                        const initAuth = async () => {
-                            try {
-                                if(window.__initial_auth_token) await signInWithCustomToken(auth, window.__initial_auth_token);
-                                else await signInAnonymously(auth);
-                            } catch(e) { console.error(e); }
-                        };
-                        initAuth();
-                        onAuthStateChanged(auth, setUser);
-                    } else setTimeout(checkFB, 500);
-                };
-                checkFB();
-            }, []);
-
-            useEffect(() => {
-                if(!user || !ready) return;
-                const { db, collection, onSnapshot, appId, orderBy, query } = window.FB;
-                
-                // Fetch Files
-                onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'files'), orderBy('createdAt', 'desc')), (snap) => {
-                    setFiles(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                // บันทึกลง Firestore ใน Collection 'users'
+                db.collection("users").doc(userId).set({
+                    firstName: firstName,
+                    lastName: lastName,
+                    phone: phone.replace(/-/g, ''), // ตัดขีดออกให้อัตโนมัติ
+                    displayName: profile.displayName, // เก็บชื่อไลน์ไว้ดูเล่น
+                    pictureUrl: profile.pictureUrl,   // เก็บรูปโปรไฟล์ไว้ดูเล่น
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    alert("✅ ลงทะเบียนสำเร็จ! ระบบจะแจ้งเตือนเมื่อมียอดหนี้");
+                    liff.closeWindow(); // ปิดหน้าต่างไลน์
+                })
+                .catch((error) => {
+                    console.error("Error writing document: ", error);
+                    alert("❌ บันทึกไม่สำเร็จ: " + error.message);
                 });
-                
-                // Fetch Summaries
-                onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'summaries'), orderBy('createdAt', 'desc')), (snap) => {
-                    setSummaries(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                });
-
-                // Fetch Results
-                onSnapshot(query(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), orderBy('timestamp', 'desc')), (snap) => {
-                    setResults(snap.docs.map(d => d.data()));
-                });
-            }, [user, ready]);
-
-            const handleAdminClick = () => {
-                if (isAdminLoggedIn) {
-                    setPage('admin');
-                } else {
-                    setShowAdminLogin(true);
-                }
-            };
-
-            const handleLoginSubmit = (password) => {
-                if (password === '1234') { // Hardcoded password for demo
-                    setIsAdminLoggedIn(true);
-                    setShowAdminLogin(false);
-                    setPage('admin');
-                } else {
-                    alert('รหัสผ่านไม่ถูกต้อง');
-                }
-            };
-
-            const startQuiz = async (file) => {
-                setLoadingQuiz(true);
-                try {
-                    const { db, collection, getDocs, query, where, appId } = window.FB;
-                    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), where('fileId', '==', file.id));
-                    const snap = await getDocs(q);
-                    const qs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                    if(qs.length === 0) { alert("ไม่พบข้อสอบในไฟล์นี้"); } 
-                    else { setQuizQuestions(qs); setPage('quiz'); }
-                } catch(e) { alert("Error loading quiz"); }
-                setLoadingQuiz(false);
-            };
-
-            const finishQuiz = async (s) => {
-                setScore(s); setPage('result');
-                if(user) {
-                    const { db, collection, addDoc, appId } = window.FB;
-                    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'results'), { score: s, total: quizQuestions.length, timestamp: Date.now(), part: selectedPart });
-                }
-            };
-
-            // Helper for embed URL
-            const getEmbedLink = (url) => {
-                if (!url) return null;
-                // Basic check for Google Drive to ensure preview mode
-                if (url.includes('drive.google.com') && url.includes('/view')) {
-                    return url.replace('/view', '/preview');
-                }
-                return url;
-            };
-
-            if(!ready) return <div className="h-screen flex items-center justify-center text-slate-500"><Icons.Loader/> Loading...</div>;
-
-            const counts = { A: files.filter(f=>f.part==='A').length, B: files.filter(f=>f.part==='B').length };
-
-            return (
-                <div className="min-h-screen">
-                    <div className="fixed inset-0 -z-10 bg-slate-50"></div>
-                    
-                    {page === 'home' && (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-                            <button onClick={handleAdminClick} className="absolute top-4 right-4 p-2 bg-white rounded-full shadow"><Icons.Settings/></button>
-                            <div className="mb-8 text-center">
-                                <div className="inline-block p-4 bg-blue-600 rounded-3xl shadow-lg mb-4 text-white"><Icons.Book/></div>
-                                <h1 className="text-3xl font-bold text-slate-800">แนวข้อสอบข้าราชการท้องถิ่น</h1>
-                                <p className="text-slate-500">ฝึกฝนเพื่ออนาคต</p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
-                                <button onClick={()=>{setSelectedPart('A'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-blue-100 group">
-                                    <div className="flex justify-between items-center mb-2"><span className="bg-blue-100 text-blue-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Check/></span><span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.A} ชุด</span></div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-blue-600">ภาค ก</h2>
-                                    <p className="text-sm text-slate-500">ความรู้ทั่วไป</p>
-                                </button>
-                                <button onClick={()=>{setSelectedPart('B'); setPage('selection');}} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-purple-100 group">
-                                    <div className="flex justify-between items-center mb-2"><span className="bg-purple-100 text-purple-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Briefcase/></span><span className="text-xs bg-slate-100 px-2 py-1 rounded">{counts.B} ชุด</span></div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-purple-600">ภาค ข</h2>
-                                    <p className="text-sm text-slate-500">ความรู้เฉพาะตำแหน่ง</p>
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mt-4">
-                                <button onClick={()=>setPage('summary')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-orange-100 group">
-                                    <div className="flex justify-between items-center mb-2"><span className="bg-orange-100 text-orange-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.FileText/></span></div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-orange-600">สรุปเนื้อหา</h2>
-                                    <p className="text-sm text-slate-500">ทบทวนบทเรียน</p>
-                                </button>
-                                <button onClick={()=>setPage('analysis')} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all text-left border border-white hover:border-green-100 group">
-                                    <div className="flex justify-between items-center mb-2"><span className="bg-green-100 text-green-700 p-2 rounded-lg group-hover:scale-110 transition"><Icons.Chart/></span></div>
-                                    <h2 className="text-xl font-bold text-slate-800 group-hover:text-green-600">วิเคราะห์ผล</h2>
-                                    <p className="text-sm text-slate-500">สถิติการสอบ</p>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'selection' && (
-                        <div className="p-4 pt-8 max-w-2xl mx-auto">
-                            <div className="flex items-center gap-4 mb-6">
-                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
-                                <h2 className="text-2xl font-bold">เลือกชุดข้อสอบ ภาค {selectedPart}</h2>
-                            </div>
-                            {loadingQuiz && <div className="text-center p-10"><Icons.Loader/> กำลังโหลด...</div>}
-                            <div className="space-y-3">
-                                {files.filter(f=>f.part===selectedPart).map(f => (
-                                    <button key={f.id} onClick={()=>startQuiz(f)} className="w-full bg-white p-4 rounded-xl shadow flex justify-between items-center hover:bg-blue-50 transition group">
-                                        <div className="text-left">
-                                            <div className="font-bold text-slate-700 group-hover:text-blue-600">{f.fileName}</div>
-                                            <div className="text-xs text-slate-400">{f.count} ข้อ • {new Date(f.createdAt).toLocaleDateString('th-TH')}</div>
-                                        </div>
-                                        <div className="text-slate-300 group-hover:text-blue-500"><Icons.ArrowRight/></div>
-                                    </button>
-                                ))}
-                                {!loadingQuiz && files.filter(f=>f.part===selectedPart).length === 0 && <div className="text-center text-slate-400 p-10">ไม่มีชุดข้อสอบ</div>}
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'quiz' && <QuizDisplay questions={quizQuestions} onFinish={finishQuiz} onHome={()=>setPage('home')} />}
-
-                    {page === 'result' && (
-                        <div className="h-screen flex flex-col items-center justify-center p-4">
-                            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full animate-pop-in">
-                                <div className="text-6xl mb-4">{score/quizQuestions.length >= 0.6 ? <span className="text-yellow-500"><Icons.Trophy/></span> : <span className="text-slate-400"><Icons.Frown/></span>}</div>
-                                <h2 className="text-2xl font-bold mb-2">{score/quizQuestions.length >= 0.6 ? 'สอบผ่าน!' : 'พยายามอีกนิด!'}</h2>
-                                <div className="text-4xl font-black text-blue-600 mb-6">{score} / {quizQuestions.length}</div>
-                                <button onClick={()=>setPage('home')} className="w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-200"><Icons.Home/> กลับหน้าหลัก</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'admin' && (
-                        <AdminScreen 
-                            goBack={() => setPage('home')} 
-                            user={user} 
-                            onLogout={() => {
-                                setIsAdminLoggedIn(false);
-                                setPage('home');
-                            }}
-                        />
-                    )}
-                    
-                    {page === 'summary' && (
-                        <div className="p-4 max-w-3xl mx-auto pt-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
-                                <h2 className="text-2xl font-bold">สรุปเนื้อหา</h2>
-                            </div>
-                            <div className="space-y-4">
-                                {summaries.map(item => (
-                                    <div key={item.id} className="bg-white rounded-xl shadow overflow-hidden border border-slate-100">
-                                        <button onClick={()=>setOpenSummaryId(openSummaryId === item.id ? null : item.id)} className="w-full p-5 flex items-center justify-between hover:bg-slate-50 text-left">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`p-2 rounded-lg ${item.category==='ภาค ก'?'bg-blue-100 text-blue-600':'bg-purple-100 text-purple-600'}`}><Icons.FileText/></div>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-700">{item.title}</h3>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${item.category==='ภาค ก'?'bg-blue-50 text-blue-600':'bg-purple-50 text-purple-600'}`}>{item.category}</span>
-                                                </div>
-                                            </div>
-                                            <div className={`transition-transform ${openSummaryId===item.id?'rotate-180':''}`}><Icons.ChevronDown/></div>
-                                        </button>
-                                        {openSummaryId === item.id && (
-                                            <div className="p-5 pt-0 border-t border-slate-50 text-slate-600 text-sm leading-relaxed">
-                                                {/* If there's a link, show iframe */}
-                                                {item.link && (
-                                                    <div className="mb-4">
-                                                        <iframe 
-                                                            src={getEmbedLink(item.link)} 
-                                                            className="w-full h-96 rounded-lg border border-slate-200" 
-                                                            title={item.title}
-                                                            loading="lazy"
-                                                        ></iframe>
-                                                        <div className="text-right mt-2">
-                                                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 font-bold hover:underline flex items-center justify-end gap-1">
-                                                                เปิดเต็มจอ <Icons.ArrowRight size={12}/>
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {/* Fallback or additional content */}
-                                                {item.content && <div dangerouslySetInnerHTML={{ __html: item.content }} />}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                {summaries.length === 0 && <div className="text-center text-slate-400 p-10">ไม่มีสรุปเนื้อหา</div>}
-                            </div>
-                        </div>
-                    )}
-
-                    {page === 'analysis' && (
-                        <div className="p-4 max-w-3xl mx-auto pt-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <button onClick={()=>setPage('home')} className="p-2 bg-white rounded-full shadow"><Icons.ArrowLeft/></button>
-                                <h2 className="text-2xl font-bold">วิเคราะห์ผล</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
-                                    <div className="text-sm text-slate-500 mb-1">สอบไปแล้ว</div>
-                                    <div className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-2"><Icons.Trophy className="text-yellow-500" size={20}/> {results.length} ครั้ง</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
-                                    <div className="text-sm text-slate-500 mb-1">คะแนนเฉลี่ย</div>
-                                    <div className="text-2xl font-bold text-blue-600 flex items-center justify-center gap-2"><Icons.TrendingUp className="text-blue-500" size={20}/> {results.length > 0 ? (results.reduce((a,b)=>a+b.score,0)/results.reduce((a,b)=>a+b.total,0)*100).toFixed(0) : 0}%</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-xl shadow text-center border border-white">
-                                    <div className="text-sm text-slate-500 mb-1">สอบผ่าน</div>
-                                    <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-2"><Icons.PieChart className="text-green-500" size={20}/> {results.filter(r=>r.score/r.total>=0.6).length} ครั้ง</div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow">
-                                <h3 className="font-bold mb-4 text-slate-700 flex items-center gap-2"><Icons.Clock className="text-slate-400"/> ประวัติล่าสุด</h3>
-                                {results.map((r,i) => {
-                                    const matchedFile = files.find(f => f.id === r.fileId);
-                                    return (
-                                        <div key={i} className="flex justify-between items-center py-3 border-b last:border-0 hover:bg-slate-50 p-2 rounded-lg transition">
-                                            <div>
-                                                <div className="font-bold text-sm text-slate-700 line-clamp-1">{matchedFile ? matchedFile.fileName : 'แบบทดสอบ'}</div>
-                                                <div className="flex gap-2 text-xs text-slate-400 mt-1">
-                                                    <span>{new Date(r.timestamp).toLocaleDateString('th-TH')}</span>
-                                                    <span className={r.part==='A'?'text-blue-500':'text-purple-500'}>ภาค {r.part}</span>
-                                                </div>
-                                            </div>
-                                            <div className={`font-bold text-lg ${r.score/r.total>=0.6?'text-green-600':'text-red-500'}`}>{r.score}/{r.total}</div>
-                                        </div>
-                                    );
-                                })}
-                                {results.length === 0 && <div className="text-center text-slate-400 py-4">ไม่มีข้อมูลการสอบ</div>}
-                            </div>
-                        </div>
-                    )}
-
-                    {showAdminLogin && (
-                        <AdminLoginModal 
-                            onLogin={handleLoginSubmit} 
-                            onCancel={() => setShowAdminLogin(false)} 
-                        />
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MainApp />);
+            });
+        }
     </script>
 </body>
 </html>
